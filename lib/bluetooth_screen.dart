@@ -262,18 +262,29 @@ class _DeviceCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  device.name,
+                  device.name == 'Unknown Device' ? 'Unnamed Device' : device.name,
                   style: GoogleFonts.rajdhani(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: AppColors.darkText,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  '${device.address} • ${device.signalStrength}',
+                  device.address,
                   style: GoogleFonts.inter(
                     fontSize: 11,
                     color: AppColors.darkTextMuted,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  device.signalStrength,
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    color: AppColors.primary,
                   ),
                 ),
               ],

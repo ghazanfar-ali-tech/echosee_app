@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:echosee_app/app_constants.dart';
 import 'package:echosee_app/models/bluetooth_glass_device.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
@@ -146,45 +147,47 @@ class BluetoothProvider extends ChangeNotifier {
       _scanSubscription?.cancel();
       _scanSubscription = FlutterBluePlus.scanResults.listen(
         (results) {
-          print('📡 Scan results: ${results.length} devices found');
-
-          _discoveredDevices.clear();
-
+          final Map<String, BluetoothGlassesDevice> deviceMap = {};
+          
           for (var result in results) {
             final device = result.device;
             final rssi = result.rssi;
             
-            // Try different ways to get the name
             String name = device.platformName;
-            if (name.isEmpty) {
-              name = result.advertisementData.advName;
-            }
-            if (name.isEmpty) {
-              name = result.advertisementData.localName;
-            }
-            if (name.isEmpty) {
-              name = 'Unknown Device';
+            if (name.isEmpty) name = result.advertisementData.advName;
+            if (name.isEmpty) name = result.advertisementData.localName;
+            
+            // Smart Identification: Check Service UUIDs for EchoSee
+            final serviceUuids = result.advertisementData.serviceUuids.map((u) => u.toString().toUpperCase()).toList();
+            if (serviceUuids.contains(AppConstants.esp32ServiceUUID.toUpperCase())) {
+              name = 'EchoSee Glasses';
             }
 
-            // Optional: Print details to help debug missing devices
-            print(
-              '  Device: $name | RSSI: $rssi | Address: ${device.remoteId}',
-            );
+            if (name.isEmpty || name == 'Unknown Device') {
+              name = 'Unnamed Device';
+            }
 
+            final id = device.remoteId.toString();
+            
             final glassesDevice = BluetoothGlassesDevice(
-              id: device.remoteId.toString(),
+              id: id,
               name: name,
-              address: device.remoteId.toString(),
+              address: id,
               signalStrength: _getSignalStrengthText(rssi),
               signalBars: _getSignalBars(rssi),
               rssi: rssi,
-              isConnected: false,
+              isConnected: _connectedDevice?.id == id,
               device: device,
             );
 
-            _discoveredDevices.add(glassesDevice);
+            // Keep the one with a name if we find it
+            if (!deviceMap.containsKey(id) || (deviceMap[id]!.name == 'Unknown Device' && name != 'Unknown Device')) {
+              deviceMap[id] = glassesDevice;
+            }
           }
 
+          _discoveredDevices = deviceMap.values.toList();
+          _discoveredDevices.sort((a, b) => b.rssi.compareTo(a.rssi));
           notifyListeners();
         },
         onError: (error) {
