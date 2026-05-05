@@ -41,14 +41,11 @@ class BluetoothProvider extends ChangeNotifier {
     });
   }
 
-  // SIMPLIFIED - No device_info_plus needed
   Future<bool> _requestPermissions() async {
     try {
       if (Platform.isAndroid) {
         print('Requesting Bluetooth permissions for Android...');
 
-        // Request all permissions
-        // Flutter will automatically handle which ones are needed based on Android version
         Map<Permission, PermissionStatus> statuses = await [
           Permission.bluetoothScan,
           Permission.bluetoothConnect,
@@ -58,12 +55,12 @@ class BluetoothProvider extends ChangeNotifier {
         bool allGranted = statuses.values.every((status) => status.isGranted);
 
         if (!allGranted) {
-          print('❌ Some permissions denied:');
+          print('  Some permissions denied:');
           statuses.forEach((permission, status) {
             print('  $permission: $status');
           });
         } else {
-          print('✅ All permissions granted');
+          print('   All permissions granted');
         }
 
         return allGranted;
@@ -74,7 +71,7 @@ class BluetoothProvider extends ChangeNotifier {
 
       return true;
     } catch (e) {
-      print('❌ Error requesting permissions: $e');
+      print('  Error requesting permissions: $e');
       return false;
     }
   }
@@ -88,9 +85,7 @@ class BluetoothProvider extends ChangeNotifier {
         print('Location service enabled: $isEnabled');
 
         if (!isEnabled) {
-          print(
-            '⚠️ Location services are OFF. Please enable them in settings.',
-          );
+          print(' Location services are OFF. Please enable them in settings.');
         }
 
         return isEnabled;
@@ -103,33 +98,33 @@ class BluetoothProvider extends ChangeNotifier {
   }
 
   Future<void> startScan() async {
-    print('🔍 Starting scan...');
+    print(' Starting scan...');
 
     bool permissionsGranted = await _requestPermissions();
     if (!permissionsGranted) {
-      print('❌ Permissions not granted. Cannot scan.');
+      print('  Permissions not granted. Cannot scan.');
       return;
     }
-    print('✅ Permissions granted');
+    print('   Permissions granted');
 
     bool locationEnabled = await _checkLocationService();
     if (!locationEnabled && Platform.isAndroid) {
-      print('❌ Location services disabled. Cannot scan on Android.');
+      print('Location services disabled. Cannot scan on Android.');
       return;
     }
 
     bool isBluetoothOn = await FlutterBluePlus.isOn;
     if (!isBluetoothOn) {
-      print('❌ Bluetooth is OFF. Requesting to turn ON...');
+      print('Bluetooth is OFF. Requesting to turn ON...');
 
       if (Platform.isAndroid) {
         await FlutterBluePlus.turnOn();
       } else {
-        print('⚠️ Please enable Bluetooth in Settings');
+        print('Please enable Bluetooth in Settings');
       }
       return;
     }
-    print('✅ Bluetooth is ON');
+    print('Bluetooth is ON');
 
     _discoveredDevices.clear();
     _isScanning = true;
@@ -142,24 +137,27 @@ class BluetoothProvider extends ChangeNotifier {
         timeout: const Duration(seconds: 10),
         androidUsesFineLocation: true,
       );
-      print('✅ Scan started successfully');
+      print('   Scan started successfully');
 
       _scanSubscription?.cancel();
       _scanSubscription = FlutterBluePlus.scanResults.listen(
         (results) {
           final Map<String, BluetoothGlassesDevice> deviceMap = {};
-          
+
           for (var result in results) {
             final device = result.device;
             final rssi = result.rssi;
-            
+
             String name = device.platformName;
             if (name.isEmpty) name = result.advertisementData.advName;
             if (name.isEmpty) name = result.advertisementData.localName;
-            
-            // Smart Identification: Check Service UUIDs for EchoSee
-            final serviceUuids = result.advertisementData.serviceUuids.map((u) => u.toString().toUpperCase()).toList();
-            if (serviceUuids.contains(AppConstants.esp32ServiceUUID.toUpperCase())) {
+
+            final serviceUuids = result.advertisementData.serviceUuids
+                .map((u) => u.toString().toUpperCase())
+                .toList();
+            if (serviceUuids.contains(
+              AppConstants.esp32ServiceUUID.toUpperCase(),
+            )) {
               name = 'EchoSee Glasses';
             }
 
@@ -168,7 +166,7 @@ class BluetoothProvider extends ChangeNotifier {
             }
 
             final id = device.remoteId.toString();
-            
+
             final glassesDevice = BluetoothGlassesDevice(
               id: id,
               name: name,
@@ -180,8 +178,9 @@ class BluetoothProvider extends ChangeNotifier {
               device: device,
             );
 
-            // Keep the one with a name if we find it
-            if (!deviceMap.containsKey(id) || (deviceMap[id]!.name == 'Unknown Device' && name != 'Unknown Device')) {
+            if (!deviceMap.containsKey(id) ||
+                (deviceMap[id]!.name == 'Unknown Device' &&
+                    name != 'Unknown Device')) {
               deviceMap[id] = glassesDevice;
             }
           }
@@ -191,7 +190,7 @@ class BluetoothProvider extends ChangeNotifier {
           notifyListeners();
         },
         onError: (error) {
-          print('❌ Scan error: $error');
+          print('Scan error: $error');
           _isScanning = false;
           notifyListeners();
         },
@@ -203,27 +202,27 @@ class BluetoothProvider extends ChangeNotifier {
         }
       });
     } catch (e) {
-      print('❌ Error starting scan: $e');
+      print('Error starting scan: $e');
       _isScanning = false;
       notifyListeners();
     }
   }
 
   Future<void> stopScan() async {
-    print('🛑 Stopping scan...');
+    print('Stopping scan...');
 
     try {
       await FlutterBluePlus.stopScan();
       _isScanning = false;
       notifyListeners();
-      print('✅ Scan stopped');
+      print('   Scan stopped');
     } catch (e) {
-      print('❌ Error stopping scan: $e');
+      print('  Error stopping scan: $e');
     }
   }
 
   Future<void> connectToDevice(BluetoothGlassesDevice glassesDevice) async {
-    print('🔗 Connecting to ${glassesDevice.name}...');
+    print('Connecting to ${glassesDevice.name}...');
 
     try {
       await stopScan();
@@ -233,16 +232,15 @@ class BluetoothProvider extends ChangeNotifier {
 
       final device = glassesDevice.device;
       if (device == null) {
-        print('❌ Device object is null');
+        print('Device object is null');
         _status = BluetoothStatus.disconnected;
         notifyListeners();
         return;
       }
 
-      // Check if already connected
       final connectionState = await device.connectionState.first;
       if (connectionState == BluetoothConnectionState.connected) {
-        print('✅ Already connected');
+        print('Already connected');
         _isConnected = true;
         _status = BluetoothStatus.connected;
         _connectedDevice = glassesDevice.copyWith(isConnected: true);
@@ -250,7 +248,6 @@ class BluetoothProvider extends ChangeNotifier {
         return;
       }
 
-      // Disconnect if in weird state
       try {
         await device.disconnect();
         await Future.delayed(const Duration(milliseconds: 500));
@@ -258,35 +255,31 @@ class BluetoothProvider extends ChangeNotifier {
         print('Cleanup disconnect: $e');
       }
 
-      // Try to connect with retry logic
       int maxRetries = 3;
       for (int attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-          print('🔄 Connection attempt $attempt/$maxRetries...');
+          print('Connection attempt $attempt/$maxRetries...');
 
           await device.connect(
-            timeout: const Duration(seconds: 20), // Increased timeout
+            timeout: const Duration(seconds: 20),
             autoConnect: false,
           );
 
-          print('✅ Connection established on attempt $attempt');
-          break; // Success, exit retry loop
+          print('Connection established on attempt $attempt');
+          break;
         } catch (e) {
-          print('❌ Attempt $attempt failed: $e');
+          print(' Attempt $attempt failed: $e');
 
           if (attempt < maxRetries) {
-            print('⏳ Waiting before retry...');
-            await Future.delayed(
-              Duration(seconds: attempt),
-            ); // Incremental backoff
+            print('Waiting before retry...');
+            await Future.delayed(Duration(seconds: attempt));
           } else {
-            print('❌ All connection attempts failed');
-            throw e; // Rethrow on final attempt
+            print('All connection attempts failed');
+            throw e;
           }
         }
       }
 
-      // Listen to connection state changes
       _connectionSubscription?.cancel();
       _connectionSubscription = device.connectionState.listen((state) {
         print('📡 Connection state: $state');
@@ -295,24 +288,22 @@ class BluetoothProvider extends ChangeNotifier {
           _isConnected = true;
           _status = BluetoothStatus.connected;
           _connectedDevice = glassesDevice.copyWith(isConnected: true);
-          print('✅ Successfully connected to ${glassesDevice.name}');
+          print('Successfully connected to ${glassesDevice.name}');
           notifyListeners();
         } else if (state == BluetoothConnectionState.disconnected) {
           _isConnected = false;
           _status = BluetoothStatus.disconnected;
           _connectedDevice = null;
-          print('🔌 Disconnected from ${glassesDevice.name}');
+          print('Disconnected from ${glassesDevice.name}');
           notifyListeners();
         }
       });
 
-      // Discover services
       try {
-        print('🔍 Discovering services...');
+        print('Discovering services...');
         List<BluetoothService> services = await device.discoverServices();
-        print('✅ Found ${services.length} services');
+        print('Found ${services.length} services');
 
-        // Print services for debugging
         for (var service in services) {
           print('  Service: ${service.uuid}');
           for (var characteristic in service.characteristics) {
@@ -320,16 +311,15 @@ class BluetoothProvider extends ChangeNotifier {
           }
         }
       } catch (e) {
-        print('⚠️ Service discovery error: $e');
+        print('Service discovery error: $e');
       }
     } catch (e) {
-      print('❌ Connection error: $e');
+      print('Connection error: $e');
       _isConnected = false;
       _status = BluetoothStatus.disconnected;
       _connectedDevice = null;
       notifyListeners();
 
-      // Show user-friendly error message
       _showConnectionError(e);
     }
   }
@@ -347,12 +337,11 @@ class BluetoothProvider extends ChangeNotifier {
       errorMessage = 'Failed to connect: ${error.toString()}';
     }
 
-    print('💬 User message: $errorMessage');
-    // You can show this in a SnackBar or Dialog
+    print('User message: $errorMessage');
   }
 
   Future<void> disconnect() async {
-    print('🔌 Disconnecting...');
+    print('    Disconnecting...');
 
     try {
       _status = BluetoothStatus.disconnecting;
@@ -366,9 +355,9 @@ class BluetoothProvider extends ChangeNotifier {
       _status = BluetoothStatus.disconnected;
       _connectedDevice = null;
       notifyListeners();
-      print('✅ Disconnected');
+      print('   Disconnected');
     } catch (e) {
-      print('❌ Disconnect error: $e');
+      print('  Disconnect error: $e');
       _status = BluetoothStatus.disconnected;
       notifyListeners();
     }

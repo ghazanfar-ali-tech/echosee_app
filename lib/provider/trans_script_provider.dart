@@ -1,4 +1,3 @@
-// lib/presentation/providers/transcript_provider.dart
 import 'dart:io';
 import 'package:echosee_app/app_constants.dart';
 import 'package:echosee_app/domain/transcript_entity.dart';

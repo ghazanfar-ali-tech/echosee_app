@@ -25,11 +25,9 @@ class BluetoothTab extends StatelessWidget {
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       children: [
-                        // Connection status card
                         FadeSlideIn(child: _GlassesStatusCard(btProv: btProv)),
                         const SizedBox(height: 24),
 
-                        // Scan button
                         FadeSlideIn(
                           delay: const Duration(milliseconds: 100),
                           child: SizedBox(
@@ -90,7 +88,6 @@ class BluetoothTab extends StatelessWidget {
                         ),
                         const SizedBox(height: 20),
 
-                        // Device list
                         btProv.discoveredDevices.isEmpty
                             ? _NoDevicesFound(isScanning: btProv.isScanning)
                             : StaggeredList(
@@ -262,7 +259,9 @@ class _DeviceCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  device.name == 'Unknown Device' ? 'Unnamed Device' : device.name,
+                  device.name == 'Unknown Device'
+                      ? 'Unnamed Device'
+                      : device.name,
                   style: GoogleFonts.rajdhani(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -290,7 +289,7 @@ class _DeviceCard extends StatelessWidget {
               ],
             ),
           ),
-          // Signal bars
+
           _SignalBars(bars: device.signalBars),
           const SizedBox(width: 12),
           ScaleTap(

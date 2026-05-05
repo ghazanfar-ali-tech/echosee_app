@@ -1,4 +1,3 @@
-// lib/presentation/providers/subtitle_provider.dart
 import 'dart:async';
 import 'package:echosee_app/models/model.dart';
 import 'package:flutter/material.dart';
@@ -25,11 +24,9 @@ class SubtitleProvider extends ChangeNotifier {
   String _currentInterim = '';
   String? _errorMessage;
 
-  // Speaker simulation (mock for MVP)
   String _currentSpeaker = 'Speaker 1';
   int _speakerIndex = 0;
 
-  // Session tracking
   DateTime? _sessionStart;
   Duration _sessionDuration = Duration.zero;
   Timer? _sessionTimer;
@@ -62,7 +59,6 @@ class SubtitleProvider extends ChangeNotifier {
   Future<bool> initialize() async {
     if (_isInitialized) return true;
 
-    // Request microphone permission
     final status = await Permission.microphone.request();
     if (!status.isGranted) {
       _errorMessage = 'Microphone permission denied';
@@ -118,7 +114,6 @@ class SubtitleProvider extends ChangeNotifier {
     _stopSessionTimer();
     await _speech.stop();
 
-    // Finalize any pending segment
     if (_currentInterim.isNotEmpty) {
       _finalizeSegment(_currentInterim);
       _currentInterim = '';
@@ -170,7 +165,6 @@ class SubtitleProvider extends ChangeNotifier {
     );
     _segments.add(segment);
 
-    // Keep only last 50 segments in memory
     if (_segments.length > 50) {
       _segments = _segments.sublist(_segments.length - 50);
     }
@@ -181,7 +175,6 @@ class SubtitleProvider extends ChangeNotifier {
       _state = SubtitleState.listening;
     } else if (status == 'notListening') {
       if (_isRecording) {
-        // Auto-restart if still should be recording
         Future.delayed(const Duration(milliseconds: 500), () {
           if (_isRecording) {
             _speech.listen(
@@ -236,7 +229,6 @@ class SubtitleProvider extends ChangeNotifier {
     }
   }
 
-  // Mock: Add subtitle from BT glasses
   void addGlassesSubtitle(String text, {String? speaker}) {
     final segment = SubtitleSegment(
       id: _uuid.v4(),

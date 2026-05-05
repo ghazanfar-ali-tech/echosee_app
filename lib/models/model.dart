@@ -1,5 +1,3 @@
-// lib/data/models/transcript_model.dart
-
 import 'package:echosee_app/domain/transcript_entity.dart';
 
 class TranscriptModel extends TranscriptEntity {
@@ -58,7 +56,6 @@ class TranscriptModel extends TranscriptEntity {
   }
 }
 
-// lib/data/models/subtitle_segment_model.dart
 class SubtitleSegment {
   final String id;
   final String text;
@@ -96,7 +93,6 @@ class SubtitleSegment {
   }
 }
 
-// lib/data/models/settings_model.dart
 class SettingsModel {
   final bool isDarkMode;
   final double fontSize;

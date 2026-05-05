@@ -34,12 +34,11 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.dark, // Defaulting to dark for tech aesthetic
+      themeMode: ThemeMode.dark,
       initialRoute: AppRoutes.splash,
       routes: {
         AppRoutes.splash: (context) => const SplashScreen(),
         AppRoutes.home: (context) => const HomeScreen(),
-        // Add other routes as needed
       },
     );
   }

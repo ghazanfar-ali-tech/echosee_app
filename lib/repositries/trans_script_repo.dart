@@ -1,4 +1,3 @@
-// lib/data/repositories/transcript_repository.dart
 import 'package:echosee_app/app_constants.dart';
 import 'package:echosee_app/data_base/sqlite_db.dart';
 import 'package:echosee_app/domain/transcript_entity.dart';
@@ -36,7 +35,6 @@ class TranscriptRepository {
     int speakerCount = 1,
     bool isPremium = false,
   }) async {
-    // Enforce free limit
     if (!isPremium) {
       await _db.enforceTranscriptLimit(AppConstants.freeTranscriptLimit);
     }

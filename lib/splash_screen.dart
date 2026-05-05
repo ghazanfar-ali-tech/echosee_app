@@ -72,7 +72,6 @@ class _SplashScreenState extends State<SplashScreen>
       backgroundColor: AppColors.darkBg,
       body: Stack(
         children: [
-          // Background gradient
           Container(
             decoration: const BoxDecoration(
               gradient: RadialGradient(
@@ -83,13 +82,11 @@ class _SplashScreenState extends State<SplashScreen>
             ),
           ),
 
-          // Grid pattern
           CustomPaint(
             painter: _GridPainter(),
             size: MediaQuery.of(context).size,
           ),
 
-          // Main content
           Center(
             child: AnimatedBuilder(
               animation: _controller,
@@ -97,11 +94,9 @@ class _SplashScreenState extends State<SplashScreen>
                 return Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Rings
                     Stack(
                       alignment: Alignment.center,
                       children: [
-                        // Outer ring
                         Transform.scale(
                           scale: _ringScale.value,
                           child: Container(
@@ -116,7 +111,7 @@ class _SplashScreenState extends State<SplashScreen>
                             ),
                           ),
                         ),
-                        // Middle ring
+
                         Transform.scale(
                           scale: _ringScale.value * 0.8,
                           child: Container(
@@ -131,7 +126,7 @@ class _SplashScreenState extends State<SplashScreen>
                             ),
                           ),
                         ),
-                        // Logo
+
                         Opacity(
                           opacity: _logoOpacity.value,
                           child: Transform.scale(
@@ -163,7 +158,6 @@ class _SplashScreenState extends State<SplashScreen>
 
                     const SizedBox(height: 32),
 
-                    // App name
                     Opacity(
                       opacity: _textOpacity.value,
                       child: Column(
@@ -199,7 +193,6 @@ class _SplashScreenState extends State<SplashScreen>
 
                     const SizedBox(height: 60),
 
-                    // Loading indicator
                     Opacity(
                       opacity: _textOpacity.value,
                       child: SizedBox(

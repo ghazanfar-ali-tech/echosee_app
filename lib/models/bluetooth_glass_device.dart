@@ -44,7 +44,6 @@ class BluetoothGlassesDevice {
     );
   }
 
-  // Optional: toString for debugging
   @override
   String toString() {
     return 'BluetoothGlassesDevice(name: $name, address: $address, rssi: $rssi, connected: $isConnected)';

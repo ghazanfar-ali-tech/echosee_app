@@ -1,4 +1,3 @@
-// lib/presentation/screens/home/home_screen.dart
 import 'package:echosee_app/app_constants.dart';
 import 'package:echosee_app/app_theme.dart';
 import 'package:echosee_app/bluetooth_screen.dart';
@@ -53,7 +52,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// ─── NAVIGATION BAR ───
 class _BottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -253,7 +251,6 @@ class _NavItemState extends State<_NavItem>
   }
 }
 
-// ─── SUBTITLE TAB ───
 class _SubtitleTab extends StatelessWidget {
   const _SubtitleTab();
 
@@ -265,10 +262,8 @@ class _SubtitleTab extends StatelessWidget {
           backgroundColor: Colors.transparent,
           body: Stack(
             children: [
-              // Background
               const _SubtitleBackground(),
 
-              // Main content
               SafeArea(
                 child: Column(
                   children: [
@@ -276,36 +271,22 @@ class _SubtitleTab extends StatelessWidget {
                     Expanded(
                       child: Stack(
                         children: [
-                          // Subtitle waveform visualization
                           if (subtitleProv.isRecording)
                             const _RecordingVisualizer(),
 
-                          // Center status
                           if (!subtitleProv.isRecording) const _IdleState(),
 
-                          // Subtitle display
                           SubtitleDisplay(),
                         ],
                       ),
                     ),
 
-                    // Controls
                     _SubtitleControls(
                       subtitleProv: subtitleProv,
                       settingsProv: settingsProv,
                     ),
                   ],
                 ),
-              ),
-
-              // Offline banner
-              Column(
-                children: [
-                  SafeArea(
-                    bottom: false,
-                    child: OfflineBanner(isOffline: subtitleProv.isOffline),
-                  ),
-                ],
               ),
             ],
           ),
@@ -353,7 +334,6 @@ class _SubtitleAppBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
         children: [
-          // Logo
           Row(
             children: [
               Container(
@@ -389,7 +369,6 @@ class _SubtitleAppBar extends StatelessWidget {
           ),
           const Spacer(),
 
-          // Session timer
           if (subtitleProv.isRecording)
             FadeSlideIn(
               child: Container(
@@ -424,7 +403,6 @@ class _SubtitleAppBar extends StatelessWidget {
 
           const SizedBox(width: 8),
 
-          // Premium badge
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
@@ -636,7 +614,6 @@ class _SubtitleControls extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
       child: Column(
         children: [
-          // Language selector
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -692,11 +669,9 @@ class _SubtitleControls extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // Main record button + action buttons
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Clear button
               ScaleTap(
                 onTap: subtitleProv.clearSegments,
                 child: Container(
@@ -715,7 +690,6 @@ class _SubtitleControls extends StatelessWidget {
               ),
               const SizedBox(width: 24),
 
-              // Main record button
               GlowingBorder(
                 active: subtitleProv.isRecording,
                 glowColor: subtitleProv.isRecording
@@ -765,7 +739,6 @@ class _SubtitleControls extends StatelessWidget {
               ),
               const SizedBox(width: 24),
 
-              // Save transcript button
               ScaleTap(
                 onTap: () => _saveTranscript(context),
                 child: Container(
@@ -828,7 +801,6 @@ class _SubtitleControls extends StatelessWidget {
   }
 }
 
-// ─── TRANSCRIPTS TAB ───
 class _TranscriptsTab extends StatefulWidget {
   const _TranscriptsTab();
 
@@ -1343,7 +1315,6 @@ class _TranscriptDetailScreen extends StatelessWidget {
   }
 }
 
-// ─── SETTINGS TAB ───
 class _SettingsTab extends StatelessWidget {
   const _SettingsTab();
 
@@ -1506,7 +1477,7 @@ class _FontSizeSelector extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          // Preview
+
           AnimatedDefaultTextStyle(
             duration: AppConstants.animNormal,
             style: TextStyle(
