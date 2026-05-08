@@ -39,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: IndexedStack(
         index: _navIndex,
         children: [
-          BluetoothTab(),
+          BluetoothHomePage(),
           _SubtitleTab(),
           _TranscriptsTab(),
 
