@@ -41,6 +41,69 @@ class BluetoothProvider extends ChangeNotifier {
     });
   }
 
+  BluetoothCharacteristic? _selectedCharacteristic;
+
+  // Add these fields
+  bool _isVerified = false;
+  bool get isVerified => _isVerified;
+  Timer? _pingTimer;
+  int _missedPings = 0;
+  static const int MAX_MISSED_PINGS = 3;
+
+  // Call this right after discoverServices succeeds
+  Future<void> _verifyConnection() async {
+    if (_selectedCharacteristic == null) return;
+
+    try {
+      final bytes = 'PING'.codeUnits;
+      await _selectedCharacteristic!.write(bytes, withoutResponse: false);
+      print('[BLE] Sent PING, waiting for PONG...');
+    } catch (e) {
+      print('[BLE] Ping failed: $e');
+      _isVerified = false;
+      notifyListeners();
+    }
+  }
+
+  // Call this in your characteristic listener
+  void _handleIncomingMessage(String message) {
+    if (message.trim() == 'PONG') {
+      _isVerified = true;
+      _missedPings = 0;
+      notifyListeners();
+      print('[BLE] Connection verified ✓');
+      _startHeartbeat(); // keep monitoring
+      return;
+    }
+    // handle other messages...
+  }
+
+  // Periodic heartbeat to detect silent disconnects
+  void _startHeartbeat() {
+    _pingTimer?.cancel();
+    _pingTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
+      if (_selectedCharacteristic == null) return;
+      try {
+        await _selectedCharacteristic!.write('PING'.codeUnits);
+        _missedPings++;
+        if (_missedPings >= MAX_MISSED_PINGS) {
+          print('[BLE] Device not responding, disconnecting...');
+          disconnect();
+        }
+      } catch (_) {
+        disconnect();
+      }
+    });
+  }
+
+  // Reset on disconnect
+  void _onDisconnected() {
+    _isVerified = false;
+    _pingTimer?.cancel();
+    _missedPings = 0;
+    notifyListeners();
+  }
+
   Future<bool> _requestPermissions() async {
     try {
       if (Platform.isAndroid) {

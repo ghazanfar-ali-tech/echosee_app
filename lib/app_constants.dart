@@ -1,5 +1,3 @@
-// lib/core/constants/app_constants.dart
-
 class AppConstants {
   // App Info
   static const String appName = 'EchoSee';
@@ -89,6 +87,7 @@ class AppConstants {
 }
 
 class AppRoutes {
+  static const String bluetoothOnboarding = '/bluetooth-onboarding';
   static const String splash = '/';
   static const String onboarding = '/onboarding';
   static const String home = '/home';

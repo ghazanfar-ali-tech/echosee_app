@@ -1,5 +1,6 @@
 import 'package:echosee_app/app_constants.dart';
 import 'package:echosee_app/app_theme.dart';
+import 'package:echosee_app/bluetooth_screen.dart';
 import 'package:echosee_app/home_screen.dart';
 import 'package:echosee_app/provider/bluetooth_provider.dart';
 import 'package:echosee_app/provider/setting_provider.dart';
@@ -38,6 +39,7 @@ class MyApp extends StatelessWidget {
       initialRoute: AppRoutes.splash,
       routes: {
         AppRoutes.splash: (context) => const SplashScreen(),
+        AppRoutes.bluetooth: (context) => const BluetoothTab(), // NEW
         AppRoutes.home: (context) => const HomeScreen(),
       },
     );

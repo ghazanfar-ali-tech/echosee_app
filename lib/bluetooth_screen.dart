@@ -170,13 +170,19 @@ class _GlassesStatusCard extends StatelessWidget {
                       color: AppColors.darkText,
                     ),
                   ),
+                  // Replace the simple subtitle text
                   Text(
-                    isConnected
-                        ? 'Signal: ${device?.signalStrength ?? "—"} • ${device?.address ?? ""}'
+                    isConnected && btProv.isVerified
+                        ? '✓ Verified  •  ${device?.signalStrength ?? "—"}  •  ${device?.address ?? ""}'
+                        : isConnected
+                        ? '⏳ Verifying connection...'
                         : 'Tap scan to find your glasses',
                     style: GoogleFonts.inter(
                       fontSize: 12,
-                      color: AppColors.darkTextMuted,
+                      color: isConnected && btProv.isVerified
+                          ? AppColors
+                                .success // green when verified
+                          : AppColors.darkTextMuted, // muted while verifying
                     ),
                   ),
                 ],

@@ -1,5 +1,6 @@
 import 'package:echosee_app/app_constants.dart';
 import 'package:echosee_app/app_theme.dart';
+import 'package:echosee_app/blue_tooth_screen_2.dart';
 import 'package:echosee_app/bluetooth_screen.dart';
 
 import 'package:echosee_app/provider/bluetooth_provider.dart';
@@ -37,10 +38,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: IndexedStack(
         index: _navIndex,
-        children: const [
+        children: [
+          BluetoothTab(),
           _SubtitleTab(),
           _TranscriptsTab(),
-          BluetoothTab(),
+
           _SettingsTab(),
         ],
       ),
@@ -81,25 +83,26 @@ class _BottomNav extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _NavItem(
-                icon: Icons.closed_caption_rounded,
-                label: 'Subtitles',
+                icon: Icons.bluetooth_searching,
+                label: 'Glasses',
                 isSelected: currentIndex == 0,
                 onTap: () => onTap(0),
+                badge: isConnected,
+                badgeColor: AppColors.success,
               ),
               _NavItem(
-                icon: Icons.history_rounded,
-                label: 'Transcripts',
+                icon: Icons.closed_caption_rounded,
+                label: 'Subtitles',
                 isSelected: currentIndex == 1,
                 onTap: () => onTap(1),
               ),
               _NavItem(
-                icon: Icons.bluetooth_rounded,
-                label: 'Glasses',
+                icon: Icons.history_rounded,
+                label: 'Transcripts',
                 isSelected: currentIndex == 2,
                 onTap: () => onTap(2),
-                badge: isConnected,
-                badgeColor: AppColors.success,
               ),
+
               _NavItem(
                 icon: Icons.tune_rounded,
                 label: 'Settings',
