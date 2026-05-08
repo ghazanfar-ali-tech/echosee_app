@@ -7,7 +7,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart' as ble;
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
-enum BluetoothTab { classic, ble }
+enum BtTabType { classic, ble }
 
 enum ConnectionStatus { disconnected, connecting, connected }
 
@@ -15,22 +15,22 @@ enum ConnectionStatus { disconnected, connecting, connected }
 
 class UnifiedDevice {
   final String name;
-  final String address; // MAC for classic, deviceId for BLE
-  final BluetoothTab type;
+  final String address;
+  final BtTabType type;
   final classic.Device? classicDevice;
   final ble.BluetoothDevice? bleDevice;
 
   UnifiedDevice.fromClassic(classic.Device d)
     : name = d.name ?? 'Unknown Device',
       address = d.address,
-      type = BluetoothTab.classic,
+      type = BtTabType.classic,
       classicDevice = d,
       bleDevice = null;
 
   UnifiedDevice.fromBle(ble.BluetoothDevice d)
     : name = d.platformName.isNotEmpty ? d.platformName : 'Unknown BLE Device',
       address = d.remoteId.str,
-      type = BluetoothTab.ble,
+      type = BtTabType.ble,
       classicDevice = null,
       bleDevice = d;
 }
@@ -48,7 +48,7 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
     with TickerProviderStateMixin {
   late TabController _tabController;
 
-  // Classic Bluetooth
+  // ── Classic Bluetooth ──
   final BluetoothClassic _classicPlugin = BluetoothClassic();
   List<UnifiedDevice> _classicDevices = [];
   List<UnifiedDevice> _pairedDevices = [];
@@ -58,9 +58,14 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
   final List<String> _classicLog = [];
   StreamSubscription? _classicDataSub;
   Uint8List _classicData = Uint8List(0);
-  StreamSubscription? _classicDiscoverySub;
   bool _classicListenerAttached = false;
-  // BLE
+
+  // ── BLE ──
+  static const String _nordicServiceUUID =
+      "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+  static const String _nordicTxUUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+  static const String _nordicRxUUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+
   List<UnifiedDevice> _bleDevices = [];
   bool _bleScanning = false;
   UnifiedDevice? _connectedBleDevice;
@@ -69,6 +74,9 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
   StreamSubscription? _bleScanSub;
   StreamSubscription? _bleConnectionSub;
   List<ble.BluetoothService> _bleServices = [];
+  ble.BluetoothCharacteristic? _txCharacteristic;
+  ble.BluetoothCharacteristic? _rxCharacteristic;
+  final List<String> _bleReceivedData = [];
 
   @override
   void initState() {
@@ -81,13 +89,12 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
   void dispose() {
     _tabController.dispose();
     _classicDataSub?.cancel();
-    _classicDiscoverySub?.cancel();
     _bleScanSub?.cancel();
     _bleConnectionSub?.cancel();
     super.dispose();
   }
 
-  // ─── Classic Bluetooth Methods ──────────────────────────────────────────────
+  // ─── Classic Methods ──────────────────────────────────────────────────────
 
   Future<void> _initClassic() async {
     try {
@@ -101,6 +108,7 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
   Future<void> _loadPairedDevices() async {
     try {
       final paired = await _classicPlugin.getPairedDevices();
+      if (!mounted) return;
       setState(() {
         _pairedDevices = paired
             .map((d) => UnifiedDevice.fromClassic(d))
@@ -136,16 +144,14 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
 
     await _classicPlugin.startScan();
 
-    // Auto-stop after 15 seconds
     Future.delayed(const Duration(seconds: 15), () {
       if (_classicScanning && mounted) _stopClassicScan();
     });
   }
 
   Future<void> _stopClassicScan() async {
-    await _classicDiscoverySub?.cancel();
-    _classicDiscoverySub = null;
     await _classicPlugin.stopScan();
+    if (!mounted) return;
     setState(() => _classicScanning = false);
     _addClassicLog('Scan stopped');
   }
@@ -155,35 +161,75 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
       await _disconnectClassic();
       return;
     }
+
+    if (!mounted) return;
     setState(() => _classicStatus = ConnectionStatus.connecting);
     _addClassicLog('Connecting to ${device.name}...');
+
     try {
-      // Serial port UUID
+      await _classicDataSub?.cancel();
+      _classicDataSub = null;
+
       await _classicPlugin.connect(
         device.address,
         "00001101-0000-1000-8000-00805f9b34fb",
       );
+
+      if (!mounted) return;
       setState(() {
         _connectedClassicDevice = device;
         _classicStatus = ConnectionStatus.connected;
+        _classicData = Uint8List(0);
       });
       _addClassicLog('Connected to ${device.name}');
 
-      _classicDataSub = _classicPlugin.onDeviceDataReceived().listen((data) {
-        setState(() {
-          _classicData = Uint8List.fromList([..._classicData, ...data]);
-        });
-        _addClassicLog('Data received: ${data.length} bytes');
-      });
+      _classicDataSub = _classicPlugin.onDeviceDataReceived().listen(
+        (data) {
+          if (!mounted) return;
+          setState(() {
+            _classicData = Uint8List.fromList([..._classicData, ...data]);
+          });
+          _addClassicLog('Received: ${data.length} bytes');
+        },
+        onError: (e) {
+          _addClassicLog('Data stream error: $e');
+          if (mounted) {
+            setState(() {
+              _classicStatus = ConnectionStatus.disconnected;
+              _connectedClassicDevice = null;
+            });
+          }
+        },
+      );
     } catch (e) {
+      // ── Crash fix: catch ALL errors gracefully ──
+      if (!mounted) return;
       setState(() => _classicStatus = ConnectionStatus.disconnected);
-      _addClassicLog('Connection failed: $e');
+
+      final errorMsg = e.toString();
+      if (errorMsg.contains('bonding') || errorMsg.contains('pair')) {
+        _addClassicLog('Device not paired. Pair in Android Settings first.');
+        _showPairingDialog(device);
+      } else if (errorMsg.contains('already connected')) {
+        _addClassicLog('Already connected. Disconnect first.');
+      } else if (errorMsg.contains('permission')) {
+        _addClassicLog('Permission denied.');
+      } else {
+        _addClassicLog('Connection failed: $errorMsg');
+        _showErrorSnackbar(
+          'Could not connect to ${device.name}.\nMake sure it is paired and nearby.',
+        );
+      }
     }
   }
 
   Future<void> _disconnectClassic() async {
-    await _classicPlugin.disconnect();
-    _classicDataSub?.cancel();
+    try {
+      await _classicPlugin.disconnect();
+    } catch (_) {}
+    await _classicDataSub?.cancel();
+    _classicDataSub = null;
+    if (!mounted) return;
     setState(() {
       _connectedClassicDevice = null;
       _classicStatus = ConnectionStatus.disconnected;
@@ -203,42 +249,54 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
   }
 
   void _addClassicLog(String msg) {
+    if (!mounted) return;
     setState(() {
       _classicLog.insert(0, '[${_timestamp()}] $msg');
       if (_classicLog.length > 50) _classicLog.removeLast();
     });
   }
 
-  // ─── BLE Methods ────────────────────────────────────────────────────────────
+  // ─── BLE Methods ──────────────────────────────────────────────────────────
 
   Future<void> _startBleScan() async {
+    await _bleScanSub?.cancel();
+    _bleScanSub = null;
+
     setState(() {
       _bleDevices = [];
       _bleScanning = true;
     });
     _addBleLog('Scanning for BLE devices...');
 
-    await ble.FlutterBluePlus.startScan(timeout: const Duration(seconds: 15));
+    try {
+      await ble.FlutterBluePlus.startScan(timeout: const Duration(seconds: 15));
 
-    _bleScanSub = ble.FlutterBluePlus.scanResults.listen((results) {
-      setState(() {
-        _bleDevices = results
-            .where((r) => r.device.platformName.isNotEmpty)
-            .map((r) => UnifiedDevice.fromBle(r.device))
-            .toList();
+      _bleScanSub = ble.FlutterBluePlus.scanResults.listen((results) {
+        if (!mounted) return;
+        setState(() {
+          _bleDevices = results
+              .where((r) => r.device.platformName.isNotEmpty)
+              .map((r) => UnifiedDevice.fromBle(r.device))
+              .toList();
+        });
       });
-    });
 
-    ble.FlutterBluePlus.isScanning.listen((scanning) {
-      if (!scanning && _bleScanning) {
-        setState(() => _bleScanning = false);
-        _addBleLog('Scan complete. Found ${_bleDevices.length} device(s)');
-      }
-    });
+      ble.FlutterBluePlus.isScanning.listen((scanning) {
+        if (!scanning && _bleScanning && mounted) {
+          setState(() => _bleScanning = false);
+          _addBleLog('Scan complete. Found ${_bleDevices.length} device(s)');
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _bleScanning = false);
+      _addBleLog('Scan error: $e');
+    }
   }
 
   Future<void> _stopBleScan() async {
     await ble.FlutterBluePlus.stopScan();
+    if (!mounted) return;
     setState(() => _bleScanning = false);
     _addBleLog('Scan stopped');
   }
@@ -254,7 +312,12 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
     _addBleLog('Connecting to ${device.name}...');
 
     try {
-      await device.bleDevice!.connect(autoConnect: false);
+      await device.bleDevice!.connect(
+        autoConnect: false,
+        timeout: const Duration(seconds: 10),
+      );
+
+      if (!mounted) return;
       setState(() {
         _connectedBleDevice = device;
         _bleStatus = ConnectionStatus.connected;
@@ -263,51 +326,167 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
 
       _bleConnectionSub = device.bleDevice!.connectionState.listen((state) {
         if (state == ble.BluetoothConnectionState.disconnected) {
+          if (!mounted) return;
           setState(() {
             _bleStatus = ConnectionStatus.disconnected;
             _connectedBleDevice = null;
             _bleServices = [];
+            _txCharacteristic = null;
+            _rxCharacteristic = null;
           });
           _addBleLog('Device disconnected');
         }
       });
 
-      // Discover services
       final services = await device.bleDevice!.discoverServices();
+      if (!mounted) return;
       setState(() => _bleServices = services);
       _addBleLog('Discovered ${services.length} service(s)');
+
+      // Look for Nordic UART Service (ESP32 BLE)
+      bool nordicFound = false;
+      for (final service in services) {
+        if (service.uuid.toString().toLowerCase() == _nordicServiceUUID) {
+          nordicFound = true;
+          _addBleLog('✅ Nordic UART Service found');
+
+          for (final char in service.characteristics) {
+            final uuid = char.uuid.toString().toLowerCase();
+
+            if (uuid == _nordicTxUUID) {
+              _txCharacteristic = char;
+              await char.setNotifyValue(true);
+              char.lastValueStream.listen((value) {
+                if (value.isEmpty || !mounted) return;
+                final text = String.fromCharCodes(value);
+                setState(() {
+                  _bleReceivedData.insert(0, '[${_timestamp()}] ← $text');
+                  if (_bleReceivedData.length > 50)
+                    _bleReceivedData.removeLast();
+                });
+                _addBleLog('Received: $text');
+              });
+              _addBleLog('✅ TX ready (notifications on)');
+            }
+
+            if (uuid == _nordicRxUUID) {
+              _rxCharacteristic = char;
+              _addBleLog('✅ RX ready (write enabled)');
+            }
+          }
+          break;
+        }
+      }
+
+      if (!nordicFound) {
+        _addBleLog('ℹ️ Nordic UART not found — generic BLE device');
+      }
     } catch (e) {
+      if (!mounted) return;
       setState(() => _bleStatus = ConnectionStatus.disconnected);
-      _addBleLog('Connection failed: $e');
+
+      final errorMsg = e.toString();
+      if (errorMsg.contains('timeout') || errorMsg.contains('147')) {
+        _addBleLog('❌ Timeout — not a BLE peripheral or out of range');
+        _showErrorSnackbar('${device.name} timed out. Not a BLE peripheral?');
+      } else {
+        _addBleLog('❌ Connection failed: $errorMsg');
+        _showErrorSnackbar('Could not connect to ${device.name}');
+      }
     }
   }
 
   Future<void> _disconnectBle() async {
-    await _connectedBleDevice?.bleDevice?.disconnect();
-    _bleConnectionSub?.cancel();
+    try {
+      await _connectedBleDevice?.bleDevice?.disconnect();
+    } catch (_) {}
+    await _bleConnectionSub?.cancel();
+    _bleConnectionSub = null;
+    if (!mounted) return;
     setState(() {
       _connectedBleDevice = null;
       _bleStatus = ConnectionStatus.disconnected;
       _bleServices = [];
+      _txCharacteristic = null;
+      _rxCharacteristic = null;
     });
     _addBleLog('Disconnected');
   }
 
+  Future<void> _sendBleData(String text) async {
+    if (_rxCharacteristic == null) {
+      _addBleLog('❌ No writable characteristic found');
+      _showErrorSnackbar('This device does not support sending data');
+      return;
+    }
+    try {
+      await _rxCharacteristic!.write(text.codeUnits, withoutResponse: false);
+      _addBleLog('Sent: $text');
+    } catch (e) {
+      _addBleLog('Send error: $e');
+    }
+  }
+
   void _addBleLog(String msg) {
+    if (!mounted) return;
     setState(() {
       _bleLog.insert(0, '[${_timestamp()}] $msg');
       if (_bleLog.length > 50) _bleLog.removeLast();
     });
   }
 
-  // ─── Helpers ────────────────────────────────────────────────────────────────
+  // ─── Helpers ──────────────────────────────────────────────────────────────
 
   String _timestamp() {
     final now = DateTime.now();
-    return '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+    return '${now.hour.toString().padLeft(2, '0')}:'
+        '${now.minute.toString().padLeft(2, '0')}:'
+        '${now.second.toString().padLeft(2, '0')}';
   }
 
-  // ─── Build ──────────────────────────────────────────────────────────────────
+  void _showErrorSnackbar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: Colors.redAccent.shade700,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
+  void _showPairingDialog(UnifiedDevice device) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF141420),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Pairing Required',
+          style: TextStyle(color: Colors.white, fontSize: 16),
+        ),
+        content: Text(
+          '${device.name} is not paired.\n\nGo to:\nAndroid Settings → Bluetooth → pair "${device.name}"\n\nThen try connecting again.',
+          style: const TextStyle(
+            color: Colors.white60,
+            fontSize: 13,
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK', style: TextStyle(color: Color(0xFF4D9FFF))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Build ────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -394,20 +573,17 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
     );
   }
 
-  Widget _statusDot(Color color) {
-    return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-    );
-  }
+  Widget _statusDot(Color color) => Container(
+    width: 8,
+    height: 8,
+    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+  );
 
-  // ─── Classic Tab ─────────────────────────────────────────────────────────────
+  // ─── Classic Tab ──────────────────────────────────────────────────────────
 
   Widget _buildClassicTab() {
     return Column(
       children: [
-        // Connection status banner
         if (_classicStatus != ConnectionStatus.disconnected)
           _buildStatusBanner(
             _connectedClassicDevice?.name ?? '',
@@ -415,7 +591,6 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
             onDisconnect: _disconnectClassic,
           ),
 
-        // Action buttons
         Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -445,6 +620,33 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
             ],
           ),
         ),
+
+        // Info hint
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.orangeAccent.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.orangeAccent.withOpacity(0.25)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.orangeAccent, size: 14),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Classic BT requires pairing first. Unpaired devices cannot connect.',
+                    style: TextStyle(color: Colors.orangeAccent, fontSize: 11),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 8),
 
         Expanded(
           child: ListView(
@@ -494,14 +696,13 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
           ),
         ),
 
-        // Send data box if connected
         if (_classicStatus == ConnectionStatus.connected)
           _buildSendBox(onSend: _sendClassicData),
       ],
     );
   }
 
-  // ─── BLE Tab ─────────────────────────────────────────────────────────────────
+  // ─── BLE Tab ──────────────────────────────────────────────────────────────
 
   Widget _buildBleTab() {
     return Column(
@@ -554,6 +755,15 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
                 ..._bleServices.map((s) => _buildServiceCard(s)),
                 const SizedBox(height: 8),
               ],
+              if (_bleReceivedData.isNotEmpty) ...[
+                _sectionHeader(
+                  'Received Data',
+                  Icons.download,
+                  _bleReceivedData.length,
+                ),
+                _buildLogBox(_bleReceivedData),
+                const SizedBox(height: 8),
+              ],
               if (_bleLog.isNotEmpty) ...[
                 _sectionHeader('Activity Log', Icons.terminal, _bleLog.length),
                 _buildLogBox(_bleLog),
@@ -561,11 +771,15 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
             ],
           ),
         ),
+
+        // Send box shows for BLE too now
+        if (_bleStatus == ConnectionStatus.connected)
+          _buildSendBox(onSend: _sendBleData),
       ],
     );
   }
 
-  // ─── Shared Widgets ──────────────────────────────────────────────────────────
+  // ─── Shared Widgets ───────────────────────────────────────────────────────
 
   Widget _buildStatusBanner(
     String deviceName,
@@ -735,6 +949,8 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
       deviceIcon = Icons.earbuds;
     } else if (name.contains('headphone') || name.contains('headset')) {
       deviceIcon = Icons.headphones;
+    } else if (name.contains('esp') || name.contains('arduino')) {
+      deviceIcon = Icons.developer_board;
     } else if (name.contains('laptop') ||
         name.contains('macbook') ||
         name.contains('computer') ||
@@ -822,6 +1038,8 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
               children: [
                 if (isPaired) _badge('Paired', const Color(0xFF7B61FF)),
                 if (isConnected) _badge('Connected', Colors.greenAccent),
+                if (!isPaired && !isConnected)
+                  _badge('Unpaired', Colors.orangeAccent),
                 const SizedBox(height: 4),
                 Icon(
                   isConnected ? Icons.link_off : Icons.link,
@@ -957,7 +1175,6 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
         border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: ListView.builder(
-        reverse: false,
         padding: const EdgeInsets.all(10),
         itemCount: log.length,
         itemBuilder: (context, i) => Text(
