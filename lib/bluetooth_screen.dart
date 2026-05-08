@@ -61,10 +61,11 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
   bool _classicListenerAttached = false;
 
   // ── BLE ──
-  static const String _nordicServiceUUID =
-      "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-  static const String _nordicTxUUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
-  static const String _nordicRxUUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+  // ── BLE UUIDs (Single Characteristic Setup) ──
+
+  static const String _serviceUUID = "12345678-1234-1234-1234-123456789abc";
+
+  static const String _charUUID = "abcdefab-1234-5678-1234-abcdefabcdef";
 
   List<UnifiedDevice> _bleDevices = [];
   bool _bleScanning = false;
@@ -216,9 +217,9 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
         _addClassicLog('Permission denied.');
       } else {
         _addClassicLog('Connection failed: $errorMsg');
-        _showErrorSnackbar(
-          'Could not connect to ${device.name}.\nMake sure it is paired and nearby.',
-        );
+        // _showErrorSnackbar(
+        //   'Could not connect to ${device.name}.\nMake sure it is paired and nearby.',
+        // );
       }
     }
   }
@@ -346,14 +347,16 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
       // Look for Nordic UART Service (ESP32 BLE)
       bool nordicFound = false;
       for (final service in services) {
-        if (service.uuid.toString().toLowerCase() == _nordicServiceUUID) {
+        if (service.uuid.toString().toLowerCase() ==
+            _serviceUUID.toLowerCase()) {
           nordicFound = true;
           _addBleLog('✅ Nordic UART Service found');
 
           for (final char in service.characteristics) {
             final uuid = char.uuid.toString().toLowerCase();
 
-            if (uuid == _nordicTxUUID) {
+            if (uuid == _charUUID.toLowerCase()) {
+              _rxCharacteristic = char;
               _txCharacteristic = char;
               await char.setNotifyValue(true);
               char.lastValueStream.listen((value) {
@@ -369,10 +372,10 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
               _addBleLog('✅ TX ready (notifications on)');
             }
 
-            if (uuid == _nordicRxUUID) {
-              _rxCharacteristic = char;
-              _addBleLog('✅ RX ready (write enabled)');
-            }
+            // if (uuid == _charUUID) {
+            //   _rxCharacteristic = char;
+            //   _addBleLog('✅ RX ready (write enabled)');
+            // }
           }
           break;
         }
@@ -389,10 +392,12 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
       if (errorMsg.contains('timeout') || errorMsg.contains('147')) {
         _addBleLog('❌ Timeout — not a BLE peripheral or out of range');
         _showErrorSnackbar('${device.name} timed out. Not a BLE peripheral?');
-      } else {
-        _addBleLog('❌ Connection failed: $errorMsg');
-        _showErrorSnackbar('Could not connect to ${device.name}');
       }
+
+      // else {
+      //   _addBleLog('❌ Connection failed: $errorMsg');
+      //   _showErrorSnackbar('Could not connect to ${device.name}');
+      // }
     }
   }
 
@@ -622,30 +627,29 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
         ),
 
         // Info hint
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.orangeAccent.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.orangeAccent.withOpacity(0.25)),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.info_outline, color: Colors.orangeAccent, size: 14),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Classic BT requires pairing first. Unpaired devices cannot connect.',
-                    style: TextStyle(color: Colors.orangeAccent, fontSize: 11),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
+        // Padding(
+        //   padding: const EdgeInsets.symmetric(horizontal: 16),
+        //   child: Container(
+        //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        //     decoration: BoxDecoration(
+        //       color: Colors.orangeAccent.withOpacity(0.08),
+        //       borderRadius: BorderRadius.circular(8),
+        //       border: Border.all(color: Colors.orangeAccent.withOpacity(0.25)),
+        //     ),
+        //     child: const Row(
+        //       children: [
+        //         Icon(Icons.info_outline, color: Colors.orangeAccent, size: 14),
+        //         SizedBox(width: 8),
+        //         Expanded(
+        //           child: Text(
+        //             'Classic BT requires pairing first. Unpaired devices cannot connect.',
+        //             style: TextStyle(color: Colors.orangeAccent, fontSize: 11),
+        //           ),
+        //         ),
+        //       ],
+        //     ),
+        //   ),
+        // ),
         const SizedBox(height: 8),
 
         Expanded(
@@ -669,11 +673,11 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
                 const SizedBox(height: 8),
               ],
               if (_classicDevices.isNotEmpty) ...[
-                _sectionHeader(
-                  'Nearby Devices',
-                  Icons.radar,
-                  _classicDevices.length,
-                ),
+                // _sectionHeader(
+                //   'Nearby Devices',
+                //   Icons.radar,
+                //   _classicDevices.length,
+                // ),
                 ..._classicDevices.map(
                   (d) => _buildDeviceCard(
                     d,
