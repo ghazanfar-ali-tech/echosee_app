@@ -71,6 +71,12 @@ dependencies:
   uuid: ^4.4.2
   collection: ^1.18.0
   device_info_plus: ^13.1.0
+
+ 
+
+  tflite_flutter: ^0.12.1
+  record: ^6.2.0
+  csv: ^8.0.0
  
 
 
@@ -100,6 +106,7 @@ flutter:
   assets:
     - assets/animations/
     - assets/icons/
+    - assets/yamnet_assets/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -98,4 +98,5 @@ class AppRoutes {
   static const String bluetooth = '/bluetooth';
   static const String premium = '/premium';
   static const String profile = '/profile';
+  static const String yamnet = '/yamnet';
 }

@@ -9,6 +9,7 @@ import 'package:echosee_app/provider/sub_title_provider.dart';
 import 'package:echosee_app/provider/trans_script_provider.dart';
 import 'package:echosee_app/widgets/animated_widget.dart';
 import 'package:echosee_app/widgets/subtitle_widget.dart';
+import 'package:echosee_app/yamnet_module/yamnet_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -42,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
           BluetoothHomePage(),
           _SubtitleTab(),
           _TranscriptsTab(),
-
+          const YamnetScreen(),
           _SettingsTab(),
         ],
       ),
@@ -102,12 +103,18 @@ class _BottomNav extends StatelessWidget {
                 isSelected: currentIndex == 2,
                 onTap: () => onTap(2),
               ),
+              _NavItem(
+                icon: Icons.swipe_vertical_sharp,
+                label: 'yamnet',
+                isSelected: currentIndex == 3,
+                onTap: () => onTap(3),
+              ),
 
               _NavItem(
                 icon: Icons.tune_rounded,
                 label: 'Settings',
-                isSelected: currentIndex == 3,
-                onTap: () => onTap(3),
+                isSelected: currentIndex == 4,
+                onTap: () => onTap(4),
               ),
             ],
           ),
