@@ -1,6 +1,5 @@
 import 'package:echosee_app/app_constants.dart';
 import 'package:echosee_app/app_theme.dart';
-import 'package:echosee_app/blue_tooth_screen_2.dart';
 import 'package:echosee_app/bluetooth_screen.dart';
 
 import 'package:echosee_app/provider/bluetooth_provider.dart';
