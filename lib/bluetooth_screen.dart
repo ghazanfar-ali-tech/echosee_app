@@ -467,16 +467,19 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF141420),
+        backgroundColor: Theme.of(context).colorScheme.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
+        title: Text(
           'Pairing Required',
-          style: TextStyle(color: Colors.white, fontSize: 16),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontSize: 16,
+          ),
         ),
         content: Text(
           '${device.name} is not paired.\n\nGo to:\nAndroid Settings → Bluetooth → pair "${device.name}"\n\nThen try connecting again.',
-          style: const TextStyle(
-            color: Colors.white60,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
             fontSize: 13,
             height: 1.5,
           ),
@@ -484,7 +487,10 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK', style: TextStyle(color: Color(0xFF4D9FFF))),
+            child: Text(
+              'OK',
+              style: TextStyle(color: Theme.of(context).colorScheme.primary),
+            ),
           ),
         ],
       ),
@@ -496,32 +502,34 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0A0A0F),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFF0057FF).withOpacity(0.15),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: const Color(0xFF0057FF).withOpacity(0.4),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
                 ),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.bluetooth,
-                color: Color(0xFF4D9FFF),
+                color: Theme.of(context).colorScheme.primary,
                 size: 20,
               ),
             ),
             const SizedBox(width: 12),
-            const Text(
+            Text(
               'Bluetooth Manager',
               style: TextStyle(
-                color: Colors.white,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface, // white in dark, black in light
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.3,
@@ -531,9 +539,9 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
         ),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: const Color(0xFF0057FF),
+          indicatorColor: Theme.of(context).colorScheme.primary,
           indicatorWeight: 3,
-          labelColor: const Color(0xFF4D9FFF),
+          labelColor: Theme.of(context).colorScheme.primary,
           unselectedLabelColor: Colors.white38,
           labelStyle: const TextStyle(
             fontWeight: FontWeight.w600,
@@ -563,7 +571,12 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
                   const Text('BLE'),
                   if (_bleStatus == ConnectionStatus.connected) ...[
                     const SizedBox(width: 6),
-                    _statusDot(Colors.greenAccent),
+                    _statusDot(
+                      Theme.of(context).brightness == Brightness.dark
+                          ? Colors
+                                .greenAccent // dark mode
+                          : Colors.green, // light mode
+                    ),
                   ],
                 ],
               ),
@@ -605,7 +618,7 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
                   icon: Icons.devices,
                   label: 'Paired Devices',
                   onTap: _loadPairedDevices,
-                  color: const Color(0xFF7B61FF),
+                  color: Colors.blue.withAlpha(100)
                 ),
               ),
               const SizedBox(width: 12),
@@ -617,8 +630,13 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
                       ? _stopClassicScan
                       : _startClassicScan,
                   color: _classicScanning
-                      ? Colors.redAccent
-                      : const Color(0xFF0057FF),
+                      ? (Theme.of(context).brightness == Brightness.dark
+                            ? Colors
+                                  .redAccent // dark mode stop
+                            : Colors.red) // light mode stop
+                      : Theme.of(
+                          context,
+                        ).colorScheme.primary, // 👈 primary for start
                   isLoading: _classicScanning,
                 ),
               ),
@@ -796,28 +814,37 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: isConnecting
-            ? const Color(0xFFFF9500).withOpacity(0.12)
-            : Colors.greenAccent.withOpacity(0.1),
+            ? Theme.of(context).colorScheme.tertiary.withOpacity(0.12) // orange
+            : Theme.of(context).colorScheme.secondary.withOpacity(0.1), // green
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isConnecting
-              ? const Color(0xFFFF9500).withOpacity(0.4)
-              : Colors.greenAccent.withOpacity(0.35),
+              ? Theme.of(context).colorScheme.tertiary.withOpacity(
+                  0.4,
+                ) // orange
+              : Theme.of(
+                  context,
+                ).colorScheme.secondary.withOpacity(0.35), // green
         ),
       ),
       child: Row(
         children: [
           if (isConnecting)
-            const SizedBox(
+            SizedBox(
               width: 16,
               height: 16,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: Color(0xFFFF9500),
+                color: Theme.of(context).colorScheme.tertiary,
               ),
             )
           else
-            const Icon(Icons.check_circle, color: Colors.greenAccent, size: 18),
+            Icon(
+              Icons.check_circle,
+              color: Theme.of(context).colorScheme.secondary,
+              size: 18,
+            ),
+
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -826,8 +853,12 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
                   : 'Connected: $deviceName',
               style: TextStyle(
                 color: isConnecting
-                    ? const Color(0xFFFF9500)
-                    : Colors.greenAccent,
+                    ? Theme.of(context)
+                          .colorScheme
+                          .tertiary // orange in dark/light
+                    : Theme.of(
+                        context,
+                      ).colorScheme.secondary, // green in dark/light
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
               ),
@@ -842,14 +873,20 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.redAccent.withOpacity(0.15),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.tertiary.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.redAccent.withOpacity(0.4)),
+                  border: Border.all(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.tertiary.withOpacity(0.4),
+                  ),
                 ),
-                child: const Text(
+                child: Text(
                   'Disconnect',
                   style: TextStyle(
-                    color: Colors.redAccent,
+                    color: Theme.of(context).colorScheme.tertiary,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                   ),
@@ -910,12 +947,12 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
       padding: const EdgeInsets.only(bottom: 8, top: 4),
       child: Row(
         children: [
-          Icon(icon, size: 14, color: Colors.white38),
+          Icon(icon, size: 14, color: Theme.of(context).colorScheme.secondary),
           const SizedBox(width: 6),
           Text(
             title,
-            style: const TextStyle(
-              color: Colors.white54,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.secondary,
               fontSize: 11,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.2,
@@ -925,12 +962,15 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
             decoration: BoxDecoration(
-              color: Colors.white10,
+              color: Theme.of(context).colorScheme.secondary,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
               '$count',
-              style: const TextStyle(color: Colors.white38, fontSize: 10),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.secondary,
+                fontSize: 10,
+              ),
             ),
           ),
         ],
@@ -974,7 +1014,7 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
     } else if (name.contains('mouse')) {
       deviceIcon = Icons.mouse;
     }
-
+final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -982,14 +1022,14 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: isConnected
-              ? Colors.greenAccent.withOpacity(0.06)
-              : const Color(0xFF141420),
+              ? (isDark ? const Color(0xFF1A2A2E) : const Color(0xFFE8FFF4)) // green tint
+    : (isDark ? const Color(0xFF1A1A2E) : Colors.white), 
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isConnected
-                ? Colors.greenAccent.withOpacity(0.35)
-                : Colors.white.withOpacity(0.07),
-          ),
+                ? (isDark ? const Color(0xFF00C853).withOpacity(0.4) : const Color(0xFF00C853).withOpacity(0.3)) // green border
+        : (isDark ? const Color(0xFF7B61FF).withOpacity(0.3) : const Color(0xFF7B61FF).withOpacity(0.15)), // purple border
+    ),
         ),
         child: Row(
           children: [
@@ -998,15 +1038,15 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
               height: 42,
               decoration: BoxDecoration(
                 color: isConnected
-                    ? Colors.greenAccent.withOpacity(0.12)
-                    : const Color(0xFF0057FF).withOpacity(0.1),
+                    ? Theme.of(context).colorScheme.primary.withOpacity(0.12)
+                    :Theme.of(context).colorScheme.primary.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 deviceIcon,
                 color: isConnected
-                    ? Colors.greenAccent
-                    : const Color(0xFF4D9FFF),
+                    ?(isDark ? Colors.greenAccent : const Color(0xFF00C853))  // green
+    : (isDark ? const Color(0xFF9D8FFF) : const Color(0xFF7B61FF)), 
                 size: 20,
               ),
             ),
@@ -1017,8 +1057,8 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
                 children: [
                   Text(
                     device.name,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color:Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
@@ -1027,8 +1067,8 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
                   const SizedBox(height: 2),
                   Text(
                     device.address,
-                    style: const TextStyle(
-                      color: Colors.white38,
+                    style: TextStyle(
+                      color:Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                       fontSize: 11,
                       fontFamily: 'monospace',
                     ),
@@ -1040,14 +1080,18 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                if (isPaired) _badge('Paired', const Color(0xFF7B61FF)),
-                if (isConnected) _badge('Connected', Colors.greenAccent),
+                if (isPaired)
+                  _badge('Paired', Theme.of(context).colorScheme.secondary),
+                if (isConnected)
+                  _badge('Connected', Theme.of(context).colorScheme.secondary),
                 if (!isPaired && !isConnected)
-                  _badge('Unpaired', Colors.orangeAccent),
+                  _badge('Unpaired', Theme.of(context).colorScheme.secondary),
                 const SizedBox(height: 4),
                 Icon(
                   isConnected ? Icons.link_off : Icons.link,
-                  color: isConnected ? Colors.redAccent : Colors.white24,
+                  color: isConnected
+                      ?  Theme.of(context).colorScheme.primary
+                      :  Theme.of(context).colorScheme.primary,
                   size: 16,
                 ),
               ],
@@ -1083,26 +1127,26 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF141420),
+        color: Theme.of(context).colorScheme.secondary,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Theme.of(context).colorScheme.secondary),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.miscellaneous_services,
                 size: 14,
-                color: Color(0xFF00C2A8),
+                color: Theme.of(context).colorScheme.secondary,
               ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   service.uuid.toString().toUpperCase(),
-                  style: const TextStyle(
-                    color: Color(0xFF00C2A8),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.secondary,
                     fontSize: 11,
                     fontFamily: 'monospace',
                     fontWeight: FontWeight.w600,
@@ -1110,7 +1154,10 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              _badge('${service.characteristics.length} chars', Colors.white38),
+              _badge(
+                '${service.characteristics.length} chars',
+                Theme.of(context).colorScheme.secondary,
+              ),
             ],
           ),
           if (service.characteristics.isNotEmpty) ...[
@@ -1123,10 +1170,10 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
                     child: Row(
                       children: [
                         const SizedBox(width: 12),
-                        const Icon(
+                        Icon(
                           Icons.arrow_right,
                           size: 12,
-                          color: Colors.white24,
+                          color: Theme.of(context).colorScheme.secondary,
                         ),
                         const SizedBox(width: 4),
                         Expanded(
@@ -1143,13 +1190,22 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
                         Row(
                           children: [
                             if (c.properties.read)
-                              _badge('R', Colors.blueAccent),
+                              _badge(
+                                'R',
+                                Theme.of(context).colorScheme.secondary,
+                              ),
                             const SizedBox(width: 3),
                             if (c.properties.write)
-                              _badge('W', Colors.orangeAccent),
+                              _badge(
+                                'W',
+                                Theme.of(context).colorScheme.secondary,
+                              ),
                             const SizedBox(width: 3),
                             if (c.properties.notify)
-                              _badge('N', Colors.purpleAccent),
+                              _badge(
+                                'N',
+                                Theme.of(context).colorScheme.secondary,
+                              ),
                           ],
                         ),
                       ],
@@ -1161,7 +1217,10 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
                 padding: const EdgeInsets.only(top: 4, left: 28),
                 child: Text(
                   '+${service.characteristics.length - 3} more',
-                  style: const TextStyle(color: Colors.white24, fontSize: 10),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.secondary,
+                    fontSize: 10,
+                  ),
                 ),
               ),
           ],
@@ -1174,17 +1233,17 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
     return Container(
       height: 160,
       decoration: BoxDecoration(
-        color: const Color(0xFF080810),
+        color: Theme.of(context).colorScheme.secondary,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Theme.of(context).colorScheme.secondary),
       ),
       child: ListView.builder(
         padding: const EdgeInsets.all(10),
         itemCount: log.length,
         itemBuilder: (context, i) => Text(
           log[i],
-          style: const TextStyle(
-            color: Colors.white38,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.secondary,
             fontSize: 10,
             fontFamily: 'monospace',
           ),
@@ -1198,20 +1257,28 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D0D1A),
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.07))),
+        color: Theme.of(context).colorScheme.secondary,
+        border: Border(
+          top: BorderSide(color: Theme.of(context).colorScheme.secondary),
+        ),
       ),
       child: Row(
         children: [
           Expanded(
             child: TextField(
               controller: controller,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.secondary,
+                fontSize: 13,
+              ),
               decoration: InputDecoration(
                 hintText: 'Send data to device...',
-                hintStyle: const TextStyle(color: Colors.white24, fontSize: 13),
+                hintStyle: TextStyle(
+                  color: Theme.of(context).colorScheme.secondary,
+                  fontSize: 13,
+                ),
                 filled: true,
-                fillColor: const Color(0xFF141420),
+                fillColor: Theme.of(context).colorScheme.secondary,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 10,
@@ -1234,10 +1301,14 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF0057FF),
+                color: Theme.of(context).colorScheme.secondary,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.send, color: Colors.white, size: 18),
+              child: Icon(
+                Icons.send,
+                color: Theme.of(context).colorScheme.secondary,
+                size: 18,
+              ),
             ),
           ),
         ],
