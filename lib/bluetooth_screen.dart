@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:bluetooth_classic/bluetooth_classic.dart';
 import 'package:bluetooth_classic/models/device.dart' as classic;
 import 'package:flutter_blue_plus/flutter_blue_plus.dart' as ble;
+import 'package:speech_to_text/speech_to_text.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
@@ -48,6 +50,17 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
     with TickerProviderStateMixin {
   late TabController _tabController;
 
+  // ── Speech & TTS ──
+  final SpeechToText _stt = SpeechToText();
+  final FlutterTts _tts = FlutterTts();
+  bool _sttAvailable = false;
+
+  /// Which tab is currently recording: 0 = classic, 1 = ble, null = none
+  int? _recordingTab;
+
+  /// Live transcript shown while recording
+  String _liveTranscript = '';
+
   // ── Classic Bluetooth ──
   final BluetoothClassic _classicPlugin = BluetoothClassic();
   List<UnifiedDevice> _classicDevices = [];
@@ -61,10 +74,7 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
   bool _classicListenerAttached = false;
 
   // ── BLE ──
-  // ── BLE UUIDs (Single Characteristic Setup) ──
-
   static const String _serviceUUID = "12345678-1234-1234-1234-123456789abc";
-
   static const String _charUUID = "abcdefab-1234-5678-1234-abcdefabcdef";
 
   List<UnifiedDevice> _bleDevices = [];
@@ -84,6 +94,8 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _initClassic();
+    _initSpeech();
+    _initTts();
   }
 
   @override
@@ -92,7 +104,95 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
     _classicDataSub?.cancel();
     _bleScanSub?.cancel();
     _bleConnectionSub?.cancel();
+    _stt.cancel();
+    _tts.stop();
     super.dispose();
+  }
+
+  // ─── Speech Init ──────────────────────────────────────────────────────────
+
+  Future<void> _initSpeech() async {
+    _sttAvailable = await _stt.initialize(
+      onError: (e) => debugPrint('STT error: $e'),
+      onStatus: (s) {
+        // When listening stops (e.g. silence), finalise and send
+        if (s == SpeechToText.doneStatus && _recordingTab != null) {
+          _onSpeechDone();
+        }
+      },
+    );
+    setState(() {});
+  }
+
+  Future<void> _initTts() async {
+    await _tts.setLanguage('en-US');
+    await _tts.setSpeechRate(0.5);
+    await _tts.setVolume(1.0);
+    await _tts.setPitch(1.0);
+  }
+
+  // ─── Speech Recording ─────────────────────────────────────────────────────
+
+  /// Start recording for the given tab index (0 = classic, 1 = ble)
+  Future<void> _startRecording(int tabIndex) async {
+    if (!_sttAvailable) {
+      _showErrorSnackbar('Microphone not available. Check permissions.');
+      return;
+    }
+    if (_recordingTab != null) {
+      await _stopRecording();
+      return;
+    }
+
+    setState(() {
+      _recordingTab = tabIndex;
+      _liveTranscript = '';
+    });
+
+    await _stt.listen(
+      onResult: (result) {
+        setState(() => _liveTranscript = result.recognizedWords);
+        // Auto-send when a final result arrives
+        if (result.finalResult && result.recognizedWords.isNotEmpty) {
+          _onSpeechDone();
+        }
+      },
+      listenFor: const Duration(seconds: 30),
+      pauseFor: const Duration(seconds: 3),
+      localeId: 'en_US',
+      cancelOnError: true,
+      partialResults: true,
+    );
+  }
+
+  Future<void> _stopRecording() async {
+    await _stt.stop();
+    _onSpeechDone();
+  }
+
+  void _onSpeechDone() {
+    final text = _liveTranscript.trim();
+    final tab = _recordingTab;
+
+    setState(() {
+      _recordingTab = null;
+      _liveTranscript = '';
+    });
+
+    if (text.isEmpty || tab == null) return;
+
+    if (tab == 0) {
+      _sendClassicData(text);
+    } else {
+      _sendBleData(text);
+    }
+  }
+
+  // ─── TTS Playback ─────────────────────────────────────────────────────────
+
+  Future<void> _speak(String text) async {
+    await _tts.stop();
+    await _tts.speak(text);
   }
 
   // ─── Classic Methods ──────────────────────────────────────────────────────
@@ -128,7 +228,6 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
     });
     _addClassicLog('Scanning for Classic devices...');
 
-    // Only attach listener ONCE ever
     if (!_classicListenerAttached) {
       _classicListenerAttached = true;
       _classicPlugin.onDeviceDiscovered().listen((event) {
@@ -190,7 +289,10 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
           setState(() {
             _classicData = Uint8List.fromList([..._classicData, ...data]);
           });
-          _addClassicLog('Received: ${data.length} bytes');
+          final text = String.fromCharCodes(data).trim();
+          _addClassicLog('Received: $text');
+          // 🔊 Speak received text aloud
+          if (text.isNotEmpty) _speak(text);
         },
         onError: (e) {
           _addClassicLog('Data stream error: $e');
@@ -203,7 +305,6 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
         },
       );
     } catch (e) {
-      // ── Crash fix: catch ALL errors gracefully ──
       if (!mounted) return;
       setState(() => _classicStatus = ConnectionStatus.disconnected);
 
@@ -217,9 +318,6 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
         _addClassicLog('Permission denied.');
       } else {
         _addClassicLog('Connection failed: $errorMsg');
-        // _showErrorSnackbar(
-        //   'Could not connect to ${device.name}.\nMake sure it is paired and nearby.',
-        // );
       }
     }
   }
@@ -344,7 +442,6 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
       setState(() => _bleServices = services);
       _addBleLog('Discovered ${services.length} service(s)');
 
-      // Look for Nordic UART Service (ESP32 BLE)
       bool nordicFound = false;
       for (final service in services) {
         if (service.uuid.toString().toLowerCase() ==
@@ -361,21 +458,18 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
               await char.setNotifyValue(true);
               char.lastValueStream.listen((value) {
                 if (value.isEmpty || !mounted) return;
-                final text = String.fromCharCodes(value);
+                final text = String.fromCharCodes(value).trim();
                 setState(() {
                   _bleReceivedData.insert(0, '[${_timestamp()}] ← $text');
                   if (_bleReceivedData.length > 50)
                     _bleReceivedData.removeLast();
                 });
                 _addBleLog('Received: $text');
+                // 🔊 Speak received text aloud
+                if (text.isNotEmpty) _speak(text);
               });
               _addBleLog('✅ TX ready (notifications on)');
             }
-
-            // if (uuid == _charUUID) {
-            //   _rxCharacteristic = char;
-            //   _addBleLog('✅ RX ready (write enabled)');
-            // }
           }
           break;
         }
@@ -393,11 +487,6 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
         _addBleLog('❌ Timeout — not a BLE peripheral or out of range');
         _showErrorSnackbar('${device.name} timed out. Not a BLE peripheral?');
       }
-
-      // else {
-      //   _addBleLog('❌ Connection failed: $errorMsg');
-      //   _showErrorSnackbar('Could not connect to ${device.name}');
-      // }
     }
   }
 
@@ -527,9 +616,7 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
             Text(
               'Bluetooth Manager',
               style: TextStyle(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface, // white in dark, black in light
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.3,
@@ -542,7 +629,7 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
           indicatorColor: Theme.of(context).colorScheme.primary,
           indicatorWeight: 3,
           labelColor: Theme.of(context).colorScheme.primary,
-          unselectedLabelColor: Colors.white38,
+          unselectedLabelColor: Colors.blue.withAlpha(150),
           labelStyle: const TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 13,
@@ -573,9 +660,8 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
                     const SizedBox(width: 6),
                     _statusDot(
                       Theme.of(context).brightness == Brightness.dark
-                          ? Colors
-                                .greenAccent // dark mode
-                          : Colors.green, // light mode
+                          ? Colors.greenAccent
+                          : Colors.green,
                     ),
                   ],
                 ],
@@ -608,7 +694,6 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
             _classicStatus,
             onDisconnect: _disconnectClassic,
           ),
-
         Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -618,7 +703,7 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
                   icon: Icons.devices,
                   label: 'Paired Devices',
                   onTap: _loadPairedDevices,
-                  color: Colors.blue.withAlpha(100)
+                  color: Colors.blue.withAlpha(100),
                 ),
               ),
               const SizedBox(width: 12),
@@ -631,45 +716,16 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
                       : _startClassicScan,
                   color: _classicScanning
                       ? (Theme.of(context).brightness == Brightness.dark
-                            ? Colors
-                                  .redAccent // dark mode stop
-                            : Colors.red) // light mode stop
-                      : Theme.of(
-                          context,
-                        ).colorScheme.primary, // 👈 primary for start
+                            ? Colors.redAccent
+                            : Colors.red)
+                      : Theme.of(context).colorScheme.primary,
                   isLoading: _classicScanning,
                 ),
               ),
             ],
           ),
         ),
-
-        // Info hint
-        // Padding(
-        //   padding: const EdgeInsets.symmetric(horizontal: 16),
-        //   child: Container(
-        //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        //     decoration: BoxDecoration(
-        //       color: Colors.orangeAccent.withOpacity(0.08),
-        //       borderRadius: BorderRadius.circular(8),
-        //       border: Border.all(color: Colors.orangeAccent.withOpacity(0.25)),
-        //     ),
-        //     child: const Row(
-        //       children: [
-        //         Icon(Icons.info_outline, color: Colors.orangeAccent, size: 14),
-        //         SizedBox(width: 8),
-        //         Expanded(
-        //           child: Text(
-        //             'Classic BT requires pairing first. Unpaired devices cannot connect.',
-        //             style: TextStyle(color: Colors.orangeAccent, fontSize: 11),
-        //           ),
-        //         ),
-        //       ],
-        //     ),
-        //   ),
-        // ),
         const SizedBox(height: 8),
-
         Expanded(
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -691,11 +747,6 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
                 const SizedBox(height: 8),
               ],
               if (_classicDevices.isNotEmpty) ...[
-                // _sectionHeader(
-                //   'Nearby Devices',
-                //   Icons.radar,
-                //   _classicDevices.length,
-                // ),
                 ..._classicDevices.map(
                   (d) => _buildDeviceCard(
                     d,
@@ -717,9 +768,8 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
             ],
           ),
         ),
-
         if (_classicStatus == ConnectionStatus.connected)
-          _buildSendBox(onSend: _sendClassicData),
+          _buildSendBox(tabIndex: 0, onSend: _sendClassicData),
       ],
     );
   }
@@ -735,19 +785,19 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
             _bleStatus,
             onDisconnect: _disconnectBle,
           ),
-
         Padding(
           padding: const EdgeInsets.all(16),
           child: _buildActionButton(
             icon: _bleScanning ? Icons.stop : Icons.bluetooth_searching,
             label: _bleScanning ? 'Stop Scanning' : 'Scan BLE Devices',
             onTap: _bleScanning ? _stopBleScan : _startBleScan,
-            color: _bleScanning ? Colors.redAccent : const Color(0xFF00C2A8),
+            color: _bleScanning
+                ? const Color.fromARGB(255, 31, 28, 28)
+                : const Color(0xFF00C2A8),
             isLoading: _bleScanning,
             fullWidth: true,
           ),
         ),
-
         Expanded(
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -793,10 +843,8 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
             ],
           ),
         ),
-
-        // Send box shows for BLE too now
         if (_bleStatus == ConnectionStatus.connected)
-          _buildSendBox(onSend: _sendBleData),
+          _buildSendBox(tabIndex: 1, onSend: _sendBleData),
       ],
     );
   }
@@ -814,17 +862,13 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: isConnecting
-            ? Theme.of(context).colorScheme.tertiary.withOpacity(0.12) // orange
-            : Theme.of(context).colorScheme.secondary.withOpacity(0.1), // green
+            ? Theme.of(context).colorScheme.tertiary.withOpacity(0.12)
+            : Theme.of(context).colorScheme.secondary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isConnecting
-              ? Theme.of(context).colorScheme.tertiary.withOpacity(
-                  0.4,
-                ) // orange
-              : Theme.of(
-                  context,
-                ).colorScheme.secondary.withOpacity(0.35), // green
+              ? Theme.of(context).colorScheme.tertiary.withOpacity(0.4)
+              : Theme.of(context).colorScheme.secondary.withOpacity(0.35),
         ),
       ),
       child: Row(
@@ -844,7 +888,6 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
               color: Theme.of(context).colorScheme.secondary,
               size: 18,
             ),
-
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -853,12 +896,8 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
                   : 'Connected: $deviceName',
               style: TextStyle(
                 color: isConnecting
-                    ? Theme.of(context)
-                          .colorScheme
-                          .tertiary // orange in dark/light
-                    : Theme.of(
-                        context,
-                      ).colorScheme.secondary, // green in dark/light
+                    ? Theme.of(context).colorScheme.tertiary
+                    : Theme.of(context).colorScheme.secondary,
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
               ),
@@ -962,7 +1001,7 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.secondary,
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
@@ -1014,7 +1053,8 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
     } else if (name.contains('mouse')) {
       deviceIcon = Icons.mouse;
     }
-final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1022,14 +1062,18 @@ final isDark = Theme.of(context).brightness == Brightness.dark;
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: isConnected
-              ? (isDark ? const Color(0xFF1A2A2E) : const Color(0xFFE8FFF4)) // green tint
-    : (isDark ? const Color(0xFF1A1A2E) : Colors.white), 
+              ? (isDark ? const Color(0xFF1A2A2E) : const Color(0xFFE8FFF4))
+              : (isDark ? const Color(0xFF1A1A2E) : Colors.white),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isConnected
-                ? (isDark ? const Color(0xFF00C853).withOpacity(0.4) : const Color(0xFF00C853).withOpacity(0.3)) // green border
-        : (isDark ? const Color(0xFF7B61FF).withOpacity(0.3) : const Color(0xFF7B61FF).withOpacity(0.15)), // purple border
-    ),
+                ? (isDark
+                      ? const Color(0xFF00C853).withOpacity(0.4)
+                      : const Color(0xFF00C853).withOpacity(0.3))
+                : (isDark
+                      ? const Color(0xFF7B61FF).withOpacity(0.3)
+                      : const Color(0xFF7B61FF).withOpacity(0.15)),
+          ),
         ),
         child: Row(
           children: [
@@ -1037,16 +1081,16 @@ final isDark = Theme.of(context).brightness == Brightness.dark;
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: isConnected
-                    ? Theme.of(context).colorScheme.primary.withOpacity(0.12)
-                    :Theme.of(context).colorScheme.primary.withOpacity(0.12),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 deviceIcon,
                 color: isConnected
-                    ?(isDark ? Colors.greenAccent : const Color(0xFF00C853))  // green
-    : (isDark ? const Color(0xFF9D8FFF) : const Color(0xFF7B61FF)), 
+                    ? (isDark ? Colors.greenAccent : const Color(0xFF00C853))
+                    : (isDark
+                          ? const Color(0xFF9D8FFF)
+                          : const Color(0xFF7B61FF)),
                 size: 20,
               ),
             ),
@@ -1058,7 +1102,9 @@ final isDark = Theme.of(context).brightness == Brightness.dark;
                   Text(
                     device.name,
                     style: TextStyle(
-                      color:Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.5),
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
@@ -1068,7 +1114,9 @@ final isDark = Theme.of(context).brightness == Brightness.dark;
                   Text(
                     device.address,
                     style: TextStyle(
-                      color:Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.5),
                       fontSize: 11,
                       fontFamily: 'monospace',
                     ),
@@ -1089,9 +1137,7 @@ final isDark = Theme.of(context).brightness == Brightness.dark;
                 const SizedBox(height: 4),
                 Icon(
                   isConnected ? Icons.link_off : Icons.link,
-                  color: isConnected
-                      ?  Theme.of(context).colorScheme.primary
-                      :  Theme.of(context).colorScheme.primary,
+                  color: Theme.of(context).colorScheme.primary,
                   size: 16,
                 ),
               ],
@@ -1127,7 +1173,7 @@ final isDark = Theme.of(context).brightness == Brightness.dark;
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.secondary,
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Theme.of(context).colorScheme.secondary),
       ),
@@ -1233,7 +1279,7 @@ final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       height: 160,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.secondary,
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Theme.of(context).colorScheme.secondary),
       ),
@@ -1252,67 +1298,149 @@ final isDark = Theme.of(context).brightness == Brightness.dark;
     );
   }
 
-  Widget _buildSendBox({required Function(String) onSend}) {
+  // ─── Send Box with Voice Button ───────────────────────────────────────────
+
+  /// [tabIndex] 0 = classic, 1 = ble
+  Widget _buildSendBox({
+    required int tabIndex,
+    required Function(String) onSend,
+  }) {
     final controller = TextEditingController();
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.secondary,
-        border: Border(
-          top: BorderSide(color: Theme.of(context).colorScheme.secondary),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.secondary,
-                fontSize: 13,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Send data to device...',
-                hintStyle: TextStyle(
-                  color: Theme.of(context).colorScheme.secondary,
-                  fontSize: 13,
-                ),
-                filled: true,
-                fillColor: Theme.of(context).colorScheme.secondary,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide.none,
-                ),
-              ),
+    final isRecording = _recordingTab == tabIndex;
+    final micColor = isRecording
+        ? Colors.redAccent
+        : Theme.of(context).colorScheme.primary;
+
+    return StatefulBuilder(
+      builder: (context, setLocal) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+            border: Border(
+              top: BorderSide(color: Theme.of(context).colorScheme.secondary),
             ),
           ),
-          const SizedBox(width: 10),
-          GestureDetector(
-            onTap: () {
-              if (controller.text.isNotEmpty) {
-                onSend(controller.text);
-                controller.clear();
-              }
-            },
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.secondary,
-                borderRadius: BorderRadius.circular(10),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Live transcript preview while recording
+              if (isRecording && _liveTranscript.isNotEmpty)
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.redAccent.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Text(
+                    '🎙 $_liveTranscript',
+                    style: TextStyle(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.7),
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+
+              Row(
+                children: [
+                  // ── Mic button ──
+                  GestureDetector(
+                    onTap: () async {
+                      if (isRecording) {
+                        await _stopRecording();
+                      } else {
+                        await _startRecording(tabIndex);
+                      }
+                      // Rebuild to reflect state
+                      if (mounted) setState(() {});
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: micColor.withOpacity(isRecording ? 0.2 : 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: micColor.withOpacity(0.5)),
+                      ),
+                      child: Icon(
+                        isRecording ? Icons.stop : Icons.mic,
+                        color: micColor,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  // ── Text field ──
+                  Expanded(
+                    child: TextField(
+                      controller: controller,
+                      style: TextStyle(
+                        color: Theme.of(context).textTheme.bodySmall?.color,
+                        fontSize: 13,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: isRecording
+                            ? 'Listening...'
+                            : 'Type or tap mic to speak...',
+                        hintStyle: TextStyle(
+                          color: Colors.blueGrey,
+                          fontSize: 13,
+                          fontStyle: isRecording
+                              ? FontStyle.italic
+                              : FontStyle.normal,
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  // ── Send button ──
+                  GestureDetector(
+                    onTap: () {
+                      if (controller.text.isNotEmpty) {
+                        onSend(controller.text);
+                        controller.clear();
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.secondary,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.send, color: Colors.white, size: 18),
+                    ),
+                  ),
+                ],
               ),
-              child: Icon(
-                Icons.send,
-                color: Theme.of(context).colorScheme.secondary,
-                size: 18,
-              ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

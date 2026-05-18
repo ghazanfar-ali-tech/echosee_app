@@ -77,6 +77,7 @@ dependencies:
   tflite_flutter: ^0.12.1
   record: ^6.2.0
   csv: ^8.0.0
+  flutter_tts: ^4.2.5
  
 
 
