@@ -1,12 +1,16 @@
 import 'package:echosee_app/app_constants.dart';
+import 'package:echosee_app/services/auth_services.dart';
 import 'package:echosee_app/widgets/utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginProvider extends ChangeNotifier {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   bool _isloading = false;
   bool get isLoading => _isloading;
+
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -16,6 +20,9 @@ class LoginProvider extends ChangeNotifier {
 
   bool _isPasswordVisible = false;
   bool get isPasswordVisible => _isPasswordVisible;
+
+  bool _isGoogleLoading = false;
+  bool get isGoogleLoading => _isGoogleLoading;
 
   void togglePasswordVisibility() {
     _isPasswordVisible = !_isPasswordVisible;
@@ -44,7 +51,7 @@ class LoginProvider extends ChangeNotifier {
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
-
+      await AuthService.saveLoginState();
       Utils.toastMessage('Login successfully!');
       _emailController.clear();
       _passwordController.clear();
@@ -71,6 +78,46 @@ class LoginProvider extends ChangeNotifier {
       Utils.toastMessage(errorMessage);
     } finally {
       _isloading = false;
+      notifyListeners();
+    }
+  }
+
+  void loginWithGoogle(BuildContext context) async {
+    _isGoogleLoading = true;
+    notifyListeners();
+
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
+      // user cancelled
+      if (googleUser == null) {
+        _isGoogleLoading = false;
+        notifyListeners();
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      await FirebaseAuth.instance.signInWithCredential(credential);
+
+      await AuthService.saveLoginState(); // ✅ save session
+
+      Utils.toastMessage('Login successfully!');
+
+      if (context.mounted) {
+        Navigator.pushReplacementNamed(context, AppRoutes.home);
+      }
+    } catch (e) {
+      debugPrint(e.toString());
+      Utils.toastMessage('Google sign in failed: $e');
+    } finally {
+      _isGoogleLoading = false;
       notifyListeners();
     }
   }

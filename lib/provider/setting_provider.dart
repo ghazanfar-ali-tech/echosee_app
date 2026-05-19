@@ -57,10 +57,4 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
     await _repo.saveSettings(_settings);
   }
-
-  Future<void> setPremium(bool value) async {
-    _settings = _settings.copyWith(isPremium: value);
-    notifyListeners();
-    await _repo.saveSettings(_settings);
-  }
 }

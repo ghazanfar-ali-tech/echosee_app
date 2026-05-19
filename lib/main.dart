@@ -59,7 +59,7 @@ class MyApp extends StatelessWidget {
       initialRoute: AppRoutes.splash,
       routes: {
         AppRoutes.splash: (context) => const SplashScreen(),
-        AppRoutes.bluetooth: (context) => const BluetoothHomePage(), // NEW
+        AppRoutes.bluetooth: (context) => const BluetoothHomePage(),
         AppRoutes.home: (context) => const HomeScreen(),
         AppRoutes.yamnet: (context) => const YamnetScreen(),
         AppRoutes.login: (context) => const LoginScreen(),

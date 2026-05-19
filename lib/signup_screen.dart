@@ -279,7 +279,12 @@ class SignupScreen extends StatelessWidget {
                                         children: [
                                           WidgetSpan(
                                             child: GestureDetector(
-                                              onTap: () {},
+                                              onTap: () {
+                                                Navigator.pushReplacementNamed(
+                                                  context,
+                                                  AppRoutes.login,
+                                                );
+                                              },
                                               child: Text(
                                                 'Sign Up',
                                                 style: TextStyle(

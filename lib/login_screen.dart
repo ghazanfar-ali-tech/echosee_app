@@ -238,13 +238,19 @@ class LoginScreen extends StatelessWidget {
                                         Color.fromARGB(255, 42, 63, 94),
                                       ],
                                       text: 'Continue with google',
-                                      onTap: () {},
+                                      isLoading: provider.isGoogleLoading,
+                                      onTap: () {
+                                        provider.loginWithGoogle(context);
+                                      },
+                                      leadingWidget: provider.isGoogleLoading
+                                          ? null
+                                          : googleIcon(size),
                                       icon: Icons.g_mobiledata,
                                       radius: 12,
                                       useGradient: false,
                                       //  borderColor: cardBorder,
                                       textColor: Colors.grey.shade400,
-                                      leadingWidget: googleIcon(size),
+                                      // leadingWidget: googleIcon(size),
                                     ),
                                   ),
                                   SizedBox(height: size.height * 0.025),
@@ -263,7 +269,7 @@ class LoginScreen extends StatelessWidget {
                                           WidgetSpan(
                                             child: GestureDetector(
                                               onTap: () {
-                                                Navigator.pushNamed(
+                                                Navigator.pushReplacementNamed(
                                                   context,
                                                   AppRoutes.signup,
                                                 );

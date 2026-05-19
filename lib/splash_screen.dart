@@ -1,5 +1,6 @@
 import 'package:echosee_app/app_constants.dart';
 import 'package:echosee_app/app_theme.dart';
+import 'package:echosee_app/services/auth_services.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -21,6 +22,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
+
     _controller = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
@@ -53,9 +55,13 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    Future.delayed(const Duration(milliseconds: 2800), () {
+    Future.delayed(const Duration(milliseconds: 2800), () async {
       if (mounted) {
-        Navigator.pushReplacementNamed(context, AppRoutes.login);
+        final loggedIn = await AuthService.isLoggedIn();
+        Navigator.pushReplacementNamed(
+          context,
+          loggedIn ? AppRoutes.home : AppRoutes.login,
+        );
       }
     });
   }
