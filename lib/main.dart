@@ -2,10 +2,12 @@ import 'package:echosee_app/app_constants.dart';
 import 'package:echosee_app/app_theme.dart';
 import 'package:echosee_app/bluetooth_screen.dart';
 import 'package:echosee_app/home_screen.dart';
+import 'package:echosee_app/login_screen.dart';
 import 'package:echosee_app/provider/bluetooth_provider.dart';
 import 'package:echosee_app/provider/setting_provider.dart';
 import 'package:echosee_app/provider/sub_title_provider.dart';
 import 'package:echosee_app/provider/trans_script_provider.dart';
+import 'package:echosee_app/signup_screen.dart';
 import 'package:echosee_app/splash_screen.dart';
 import 'package:echosee_app/yamnet_module/yamnet_screen.dart';
 import 'package:flutter/material.dart';
@@ -45,6 +47,8 @@ class MyApp extends StatelessWidget {
         AppRoutes.bluetooth: (context) => const BluetoothHomePage(), // NEW
         AppRoutes.home: (context) => const HomeScreen(),
         AppRoutes.yamnet: (context) => const YamnetScreen(),
+        AppRoutes.login: (context) => const LoginScreen(),
+        AppRoutes.signup: (context) => const SignupScreen(),
       },
     );
   }

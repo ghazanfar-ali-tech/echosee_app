@@ -1,4 +1,57 @@
+import 'dart:ui';
+
+import 'package:flutter/material.dart';
+import 'package:path/path.dart';
+
+class AppThemeColors {
+  final bool isDark;
+  final Color bgColor;
+  final Color cardColor;
+  final Color cardBorder;
+  final Color primaryText;
+  final Color subText;
+  final Color primaryColor;
+
+  AppThemeColors({
+    required this.isDark,
+    required this.bgColor,
+    required this.cardColor,
+    required this.cardBorder,
+    required this.primaryText,
+    required this.subText,
+    required this.primaryColor,
+  });
+}
+
 class AppConstants {
+  static AppThemeColors getColors(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF050A14) : const Color(0xFFF0F7FF);
+    final cardColor = isDark
+        ? const Color(0xFF0D1421)
+        : const Color(0xFFFFFFFF);
+    final cardBorder = isDark
+        ? const Color(0xFF1E2D42)
+        : const Color(0xFFD0E4F7);
+    final primaryText = isDark
+        ? const Color(0xFFFFFFFF)
+        : const Color(0xFF0096C7);
+    final subText = isDark ? const Color(0xFF7A9BB5) : const Color(0xFF3D6080);
+    final primaryColor = isDark
+        ? const Color(0xFF00D4FF)
+        : const Color(0xFF0096C7);
+        
+    return AppThemeColors(
+      isDark: isDark,
+      bgColor: bgColor,
+      cardColor: cardColor,
+      cardBorder: cardBorder,
+      primaryText: primaryText,
+      subText: subText,
+      primaryColor: primaryColor,
+    );
+  }
+
   // App Info
   static const String appName = 'EchoSee';
   static const String appVersion = '1.0.0';
@@ -99,4 +152,6 @@ class AppRoutes {
   static const String premium = '/premium';
   static const String profile = '/profile';
   static const String yamnet = '/yamnet';
+  static const String login = '/login';
+  static const String signup = '/signup';
 }
