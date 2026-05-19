@@ -1,8 +1,11 @@
 import 'package:echosee_app/app_constants.dart';
 import 'package:echosee_app/app_theme.dart';
 import 'package:echosee_app/bluetooth_screen.dart';
+import 'package:echosee_app/constants.dart';
 import 'package:echosee_app/home_screen.dart';
 import 'package:echosee_app/login_screen.dart';
+import 'package:echosee_app/provider/auth_providers/login_provider.dart';
+import 'package:echosee_app/provider/auth_providers/signup_provider.dart';
 import 'package:echosee_app/provider/bluetooth_provider.dart';
 import 'package:echosee_app/provider/setting_provider.dart';
 import 'package:echosee_app/provider/sub_title_provider.dart';
@@ -10,11 +13,21 @@ import 'package:echosee_app/provider/trans_script_provider.dart';
 import 'package:echosee_app/signup_screen.dart';
 import 'package:echosee_app/splash_screen.dart';
 import 'package:echosee_app/yamnet_module/yamnet_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: FirebaseOptions(
+      apiKey: Constants.apiKey,
+      appId: Constants.appId,
+      messagingSenderId: Constants.messagingSenderId,
+      projectId: Constants.projectId,
+    ),
+  );
 
   runApp(
     MultiProvider(
@@ -23,6 +36,8 @@ void main() {
         ChangeNotifierProvider(create: (_) => SubtitleProvider()),
         ChangeNotifierProvider(create: (_) => BluetoothProvider()),
         ChangeNotifierProvider(create: (_) => TranscriptProvider()),
+        ChangeNotifierProvider(create: (_) => SignupProvider()),
+        ChangeNotifierProvider(create: (_) => LoginProvider()),
       ],
       child: const MyApp(),
     ),

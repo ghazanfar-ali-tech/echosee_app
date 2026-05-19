@@ -80,6 +80,7 @@ dependencies:
   flutter_tts: ^4.2.5
   firebase_core: ^4.9.0
   firebase_auth: ^6.5.1
+  fluttertoast: ^9.0.0
  
 
 

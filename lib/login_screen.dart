@@ -1,10 +1,12 @@
 import 'package:echosee_app/app_constants.dart';
+import 'package:echosee_app/provider/auth_providers/login_provider.dart';
 import 'package:echosee_app/widgets/custom_text_field.dart';
 import 'package:echosee_app/widgets/app_logo_text.dart';
 import 'package:echosee_app/widgets/google_logo.dart';
 import 'package:echosee_app/widgets/roundButton.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -16,9 +18,6 @@ class LoginScreen extends StatelessWidget {
 
     final hPad = size.width * 0.06;
     final cardRadius = size.width * 0.06;
-
-    final nameController = TextEditingController();
-    final passwordController = TextEditingController();
 
     return Scaffold(
       backgroundColor: AppConstants.getColors(context).bgColor,
@@ -100,160 +99,200 @@ class LoginScreen extends StatelessWidget {
                           ),
                         ),
                         SizedBox(height: size.height * 0.03),
-
-                        customTextField(
-                          hintText: 'Enter Name',
-                          prefixIcon: Icons.person_outline_rounded,
-                          controller: nameController,
-                          isDark: AppConstants.getColors(context).isDark,
-                          primaryColor: AppConstants.getColors(
-                            context,
-                          ).primaryColor,
-                        ),
-                        SizedBox(height: size.height * 0.018),
-
-                        customTextField(
-                          hintText: 'Password',
-                          prefixIcon: Icons.lock_outline_rounded,
-                          suffixIcon: Icons.visibility_outlined,
-                          controller: passwordController,
-                          obscureText: true,
-                          isDark: AppConstants.getColors(context).isDark,
-                          primaryColor: AppConstants.getColors(
-                            context,
-                          ).primaryColor,
-                        ),
-                        SizedBox(height: size.height * 0.012),
-
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: GestureDetector(
-                            onTap: () {},
-                            child: Text(
-                              'Forgot Password?',
-                              style: TextStyle(
-                                color: AppConstants.getColors(
-                                  context,
-                                ).primaryColor,
-                                fontSize: size.width * 0.033,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: size.height * 0.025),
-
-                        SizedBox(
-                          width: double.infinity,
-                          child: roundedButton(
-                            text: 'login',
-                            onTap: () {
-                              Navigator.pushNamed(context, AppRoutes.home);
-                            },
-                            icon: Icons.login,
-                            radius: 12,
-                            gradientColors: const [
-                              Color(0xFF7B2FBE),
-                              Color(0xFF00D4FF),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: size.height * 0.022),
-
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Divider(
-                                color: AppConstants.getColors(
-                                  context,
-                                ).cardBorder,
-                                thickness: 1,
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                              ),
-                              child: Text(
-                                'OR',
-                                style: TextStyle(
-                                  color: AppConstants.getColors(
-                                    context,
-                                  ).subText,
-                                  fontSize: size.width * 0.032,
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Divider(
-                                color: AppConstants.getColors(
-                                  context,
-                                ).cardBorder,
-                                thickness: 1,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: size.height * 0.022),
-
-                        SizedBox(
-                          width: double.infinity,
-                          child: roundedButton(
-                            gradientColors: [
-                              Color.fromARGB(255, 42, 63, 94),
-                              Color.fromARGB(255, 42, 63, 94),
-                            ],
-                            text: 'Continue with google',
-                            onTap: () {},
-                            icon: Icons.g_mobiledata,
-                            radius: 12,
-                            useGradient: false,
-                            //  borderColor: cardBorder,
-                            textColor: Colors.grey.shade400,
-                            leadingWidget: googleIcon(size),
-                          ),
-                        ),
-                        SizedBox(height: size.height * 0.025),
-
-                        Center(
-                          child: RichText(
-                            text: TextSpan(
-                              text: "Don't have an account? ",
-                              style: TextStyle(
-                                color: AppConstants.getColors(context).subText,
-                                fontSize: size.width * 0.033,
-                              ),
-                              children: [
-                                WidgetSpan(
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      Navigator.pushNamed(
-                                        context,
-                                        AppRoutes.signup,
-                                      );
+                        Consumer<LoginProvider>(
+                          builder: (context, provider, child) {
+                            return Form(
+                              key: provider.formKey,
+                              child: Column(
+                                children: [
+                                  CustomTextField(
+                                    hintText: 'Gmail',
+                                    prefixIcon: Icons.email_rounded,
+                                    controller: provider.emailController,
+                                    isDark: AppConstants.getColors(
+                                      context,
+                                    ).isDark,
+                                    primaryColor: AppConstants.getColors(
+                                      context,
+                                    ).primaryColor,
+                                    validator: (value) {
+                                      if (value!.isEmpty) {
+                                        return "Enter Gmail";
+                                      }
+                                      if (!value.contains('@') ||
+                                          !value.contains('.')) {
+                                        return 'Please enter a valid email address';
+                                      }
+                                      return null;
                                     },
-                                    child: Text(
-                                      'Sign Up',
-                                      style: TextStyle(
-                                        color: AppConstants.getColors(
-                                          context,
-                                        ).primaryColor,
-                                        fontSize: size.width * 0.033,
-                                        fontWeight: FontWeight.w600,
+                                  ),
+                                  SizedBox(height: size.height * 0.018),
+
+                                  CustomTextField(
+                                    hintText: 'Password',
+                                    prefixIcon: Icons.lock_outline_rounded,
+                                    suffixIcon: provider.isPasswordVisible
+                                        ? Icons.visibility_off_rounded
+                                        : Icons.visibility_rounded,
+                                    controller: provider.passwordController,
+                                    obscureText: !provider.isPasswordVisible,
+                                    onSuffixTap: () =>
+                                        provider.togglePasswordVisibility(),
+                                    isDark: AppConstants.getColors(
+                                      context,
+                                    ).isDark,
+                                    primaryColor: AppConstants.getColors(
+                                      context,
+                                    ).primaryColor,
+                                    validator: (value) {
+                                      if (value!.isEmpty) {
+                                        return "Enter Password";
+                                      }
+                                      if (value.length < 6) {
+                                        return "Password must be at least 6 characters long!";
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  SizedBox(height: size.height * 0.012),
+
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: GestureDetector(
+                                      onTap: () {},
+                                      child: Text(
+                                        'Forgot Password?',
+                                        style: TextStyle(
+                                          color: AppConstants.getColors(
+                                            context,
+                                          ).primaryColor,
+                                          fontSize: size.width * 0.033,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
+                                  SizedBox(height: size.height * 0.025),
+
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: roundedButton(
+                                      text: 'login',
+                                      isLoading: provider.isLoading,
+                                      onTap: () {
+                                        provider.loginWithEmail(context);
+                                      },
+                                      icon: Icons.login,
+                                      radius: 12,
+                                      gradientColors: const [
+                                        Color(0xFF7B2FBE),
+                                        Color(0xFF00D4FF),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(height: size.height * 0.022),
+
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Divider(
+                                          color: AppConstants.getColors(
+                                            context,
+                                          ).cardBorder,
+                                          thickness: 1,
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                        ),
+                                        child: Text(
+                                          'OR',
+                                          style: TextStyle(
+                                            color: AppConstants.getColors(
+                                              context,
+                                            ).subText,
+                                            fontSize: size.width * 0.032,
+                                            fontWeight: FontWeight.w500,
+                                            letterSpacing: 1,
+                                          ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Divider(
+                                          color: AppConstants.getColors(
+                                            context,
+                                          ).cardBorder,
+                                          thickness: 1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: size.height * 0.022),
+
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: roundedButton(
+                                      gradientColors: [
+                                        Color.fromARGB(255, 42, 63, 94),
+                                        Color.fromARGB(255, 42, 63, 94),
+                                      ],
+                                      text: 'Continue with google',
+                                      onTap: () {},
+                                      icon: Icons.g_mobiledata,
+                                      radius: 12,
+                                      useGradient: false,
+                                      //  borderColor: cardBorder,
+                                      textColor: Colors.grey.shade400,
+                                      leadingWidget: googleIcon(size),
+                                    ),
+                                  ),
+                                  SizedBox(height: size.height * 0.025),
+
+                                  Center(
+                                    child: RichText(
+                                      text: TextSpan(
+                                        text: "Don't have an account? ",
+                                        style: TextStyle(
+                                          color: AppConstants.getColors(
+                                            context,
+                                          ).subText,
+                                          fontSize: size.width * 0.033,
+                                        ),
+                                        children: [
+                                          WidgetSpan(
+                                            child: GestureDetector(
+                                              onTap: () {
+                                                Navigator.pushNamed(
+                                                  context,
+                                                  AppRoutes.signup,
+                                                );
+                                              },
+                                              child: Text(
+                                                'Sign Up',
+                                                style: TextStyle(
+                                                  color: AppConstants.getColors(
+                                                    context,
+                                                  ).primaryColor,
+                                                  fontSize: size.width * 0.033,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
                         ),
+                        SizedBox(height: size.height * 0.04),
                       ],
                     ),
                   ),
-                  SizedBox(height: size.height * 0.04),
                 ],
               ),
             ),

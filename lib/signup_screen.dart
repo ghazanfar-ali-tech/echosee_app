@@ -1,10 +1,12 @@
 import 'package:echosee_app/app_constants.dart';
+import 'package:echosee_app/provider/auth_providers/signup_provider.dart';
 import 'package:echosee_app/widgets/app_logo_text.dart';
 import 'package:echosee_app/widgets/custom_text_field.dart';
 import 'package:echosee_app/widgets/google_logo.dart';
 import 'package:echosee_app/widgets/roundButton.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 class SignupScreen extends StatelessWidget {
   const SignupScreen({super.key});
@@ -16,11 +18,6 @@ class SignupScreen extends StatelessWidget {
 
     final hPad = size.width * 0.06;
     final cardRadius = size.width * 0.06;
-
-    final nameController = TextEditingController();
-    final emailController = TextEditingController();
-    final passwordController = TextEditingController();
-    final confirmPasswordController = TextEditingController();
 
     return Scaffold(
       backgroundColor: AppConstants.getColors(context).bgColor,
@@ -102,178 +99,212 @@ class SignupScreen extends StatelessWidget {
                           ),
                         ),
                         SizedBox(height: size.height * 0.03),
+                        Consumer<SignupProvider>(
+                          builder: (context, signupProvider, child) {
+                            return Form(
+                              key: signupProvider.formKey,
+                              child: Column(
+                                children: [
+                                  CustomTextField(
+                                    hintText: 'Full Name',
+                                    prefixIcon: Icons.person_outline_rounded,
+                                    controller: signupProvider.nameController,
+                                    isDark: AppConstants.getColors(
+                                      context,
+                                    ).isDark,
+                                    primaryColor: AppConstants.getColors(
+                                      context,
+                                    ).primaryColor,
+                                  ),
+                                  SizedBox(height: size.height * 0.018),
 
-                        customTextField(
-                          hintText: 'Full Name',
-                          prefixIcon: Icons.person_outline_rounded,
-                          controller: nameController,
-                          isDark: AppConstants.getColors(context).isDark,
-                          primaryColor: AppConstants.getColors(
-                            context,
-                          ).primaryColor,
-                        ),
-                        SizedBox(height: size.height * 0.018),
+                                  CustomTextField(
+                                    hintText: 'Gmail',
+                                    prefixIcon: Icons.person_outline_rounded,
+                                    controller: signupProvider.emailController,
+                                    isDark: AppConstants.getColors(
+                                      context,
+                                    ).isDark,
+                                    primaryColor: AppConstants.getColors(
+                                      context,
+                                    ).primaryColor,
+                                  ),
+                                  SizedBox(height: size.height * 0.018),
 
-                        customTextField(
-                          hintText: 'Gmail',
-                          prefixIcon: Icons.person_outline_rounded,
-                          controller: emailController,
-                          isDark: AppConstants.getColors(context).isDark,
-                          primaryColor: AppConstants.getColors(
-                            context,
-                          ).primaryColor,
-                        ),
-                        SizedBox(height: size.height * 0.018),
+                                  CustomTextField(
+                                    hintText: 'Password',
+                                    prefixIcon: Icons.lock_outline_rounded,
+                                    suffixIcon: signupProvider.isPasswordVisible
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
+                                    onSuffixTap: () => signupProvider
+                                        .togglePasswordVisibility(),
+                                    controller:
+                                        signupProvider.passwordController,
+                                    obscureText:
+                                        !signupProvider.isPasswordVisible,
+                                    isDark: AppConstants.getColors(
+                                      context,
+                                    ).isDark,
+                                    primaryColor: AppConstants.getColors(
+                                      context,
+                                    ).primaryColor,
+                                  ),
+                                  SizedBox(height: size.height * 0.018),
+                                  CustomTextField(
+                                    hintText: 'Confirm Password',
+                                    prefixIcon: Icons.lock_outline_rounded,
+                                    suffixIcon:
+                                        signupProvider.isConfirmPasswordVisible
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
+                                    onSuffixTap: () => signupProvider
+                                        .toggleConfirmPasswordVisibility(),
+                                    controller: signupProvider
+                                        .confirmPasswordController,
+                                    obscureText: !signupProvider
+                                        .isConfirmPasswordVisible,
+                                    isDark: AppConstants.getColors(
+                                      context,
+                                    ).isDark,
+                                    primaryColor: AppConstants.getColors(
+                                      context,
+                                    ).primaryColor,
+                                  ),
+                                  SizedBox(height: size.height * 0.012),
 
-                        customTextField(
-                          hintText: 'Password',
-                          prefixIcon: Icons.lock_outline_rounded,
-                          suffixIcon: Icons.visibility_outlined,
-                          controller: passwordController,
-                          obscureText: true,
-                          isDark: AppConstants.getColors(context).isDark,
-                          primaryColor: AppConstants.getColors(
-                            context,
-                          ).primaryColor,
-                        ),
-                        SizedBox(height: size.height * 0.018),
-                        customTextField(
-                          hintText: 'Confirm Password',
-                          prefixIcon: Icons.lock_outline_rounded,
-                          suffixIcon: Icons.visibility_outlined,
-                          controller: confirmPasswordController,
-                          obscureText: true,
-                          isDark: AppConstants.getColors(context).isDark,
-                          primaryColor: AppConstants.getColors(
-                            context,
-                          ).primaryColor,
-                        ),
-                        SizedBox(height: size.height * 0.012),
-
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: GestureDetector(
-                            onTap: () {},
-                            child: Text(
-                              'Forgot Password?',
-                              style: TextStyle(
-                                color: AppConstants.getColors(
-                                  context,
-                                ).primaryColor,
-                                fontSize: size.width * 0.033,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: size.height * 0.025),
-
-                        SizedBox(
-                          width: double.infinity,
-                          child: roundedButton(
-                            text: 'SignUp',
-                            onTap: () {
-                              Navigator.pushNamed(context, AppRoutes.home);
-                            },
-                            icon: Icons.login,
-                            radius: 12,
-                            gradientColors: const [
-                              Color(0xFF7B2FBE),
-                              Color(0xFF00D4FF),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: size.height * 0.022),
-
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Divider(
-                                color: AppConstants.getColors(
-                                  context,
-                                ).cardBorder,
-                                thickness: 1,
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                              ),
-                              child: Text(
-                                'OR',
-                                style: TextStyle(
-                                  color: AppConstants.getColors(
-                                    context,
-                                  ).subText,
-                                  fontSize: size.width * 0.032,
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Divider(
-                                color: AppConstants.getColors(
-                                  context,
-                                ).cardBorder,
-                                thickness: 1,
-                              ),
-                            ),
-                          ],
-                        ),
-                        // SizedBox(height: size.height * 0.022),
-
-                        // SizedBox(
-                        //   width: double.infinity,
-                        //   child: roundedButton(
-                        //     gradientColors: [
-                        //       Color.fromARGB(255, 42, 63, 94),
-                        //       Color.fromARGB(255, 42, 63, 94),
-                        //     ],
-                        //     text: 'Continue with google',
-                        //     onTap: () {},
-                        //     icon: Icons.g_mobiledata,
-                        //     radius: 12,
-                        //     useGradient: false,
-                        //     //  borderColor: cardBorder,
-                        //     textColor: Colors.grey.shade400,
-                        //     leadingWidget: googleIcon(size),
-                        //   ),
-                        // ),
-                        SizedBox(height: size.height * 0.025),
-
-                        Center(
-                          child: RichText(
-                            text: TextSpan(
-                              text: "Don't have an account? ",
-                              style: TextStyle(
-                                color: AppConstants.getColors(context).subText,
-                                fontSize: size.width * 0.033,
-                              ),
-                              children: [
-                                WidgetSpan(
-                                  child: GestureDetector(
-                                    onTap: () {},
-                                    child: Text(
-                                      'Sign Up',
-                                      style: TextStyle(
-                                        color: AppConstants.getColors(
-                                          context,
-                                        ).primaryColor,
-                                        fontSize: size.width * 0.033,
-                                        fontWeight: FontWeight.w600,
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: GestureDetector(
+                                      onTap: () {},
+                                      child: Text(
+                                        'Forgot Password?',
+                                        style: TextStyle(
+                                          color: AppConstants.getColors(
+                                            context,
+                                          ).primaryColor,
+                                          fontSize: size.width * 0.033,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
+                                  SizedBox(height: size.height * 0.025),
+
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: roundedButton(
+                                      text: 'SignUp',
+                                      isLoading: signupProvider.isLoading,
+                                      onTap: () {
+                                        signupProvider.sigupWithEmail(context);
+                                      },
+                                      icon: Icons.login,
+                                      radius: 12,
+                                      gradientColors: const [
+                                        Color(0xFF7B2FBE),
+                                        Color(0xFF00D4FF),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(height: size.height * 0.022),
+
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Divider(
+                                          color: AppConstants.getColors(
+                                            context,
+                                          ).cardBorder,
+                                          thickness: 1,
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                        ),
+                                        child: Text(
+                                          'OR',
+                                          style: TextStyle(
+                                            color: AppConstants.getColors(
+                                              context,
+                                            ).subText,
+                                            fontSize: size.width * 0.032,
+                                            fontWeight: FontWeight.w500,
+                                            letterSpacing: 1,
+                                          ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Divider(
+                                          color: AppConstants.getColors(
+                                            context,
+                                          ).cardBorder,
+                                          thickness: 1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  // SizedBox(height: size.height * 0.022),
+
+                                  // SizedBox(
+                                  //   width: double.infinity,
+                                  //   child: roundedButton(
+                                  //     gradientColors: [
+                                  //       Color.fromARGB(255, 42, 63, 94),
+                                  //       Color.fromARGB(255, 42, 63, 94),
+                                  //     ],
+                                  //     text: 'Continue with google',
+                                  //     onTap: () {},
+                                  //     icon: Icons.g_mobiledata,
+                                  //     radius: 12,
+                                  //     useGradient: false,
+                                  //     //  borderColor: cardBorder,
+                                  //     textColor: Colors.grey.shade400,
+                                  //     leadingWidget: googleIcon(size),
+                                  //   ),
+                                  // ),
+                                  SizedBox(height: size.height * 0.025),
+
+                                  Center(
+                                    child: RichText(
+                                      text: TextSpan(
+                                        text: "Don't have an account? ",
+                                        style: TextStyle(
+                                          color: AppConstants.getColors(
+                                            context,
+                                          ).subText,
+                                          fontSize: size.width * 0.033,
+                                        ),
+                                        children: [
+                                          WidgetSpan(
+                                            child: GestureDetector(
+                                              onTap: () {},
+                                              child: Text(
+                                                'Sign Up',
+                                                style: TextStyle(
+                                                  color: AppConstants.getColors(
+                                                    context,
+                                                  ).primaryColor,
+                                                  fontSize: size.width * 0.033,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
                         ),
+                        SizedBox(height: size.height * 0.04),
                       ],
                     ),
                   ),
-                  SizedBox(height: size.height * 0.04),
                 ],
               ),
             ),
