@@ -5,6 +5,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:echosee_app/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
@@ -91,21 +93,30 @@ class _YamnetScreenState extends State<YamnetScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("YAMNet Sound Classification"),
+        automaticallyImplyLeading: false,
+        title: Text(
+          "YAMNet Sound Classification",
+          style: GoogleFonts.orbitron(
+            color: isDark ? AppColors.darkText : AppColors.lightText,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        iconTheme: IconThemeData(
+          color: isDark ? AppColors.darkText : AppColors.lightText,
+        ),
       ),
       extendBodyBehindAppBar: true,
       body: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.blueGrey.shade900, Colors.black],
-          ),
+          color: isDark ? AppColors.darkBg : AppColors.lightBg,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -114,19 +125,25 @@ class _YamnetScreenState extends State<YamnetScreen> {
                 ? const Icon(
                     Icons.graphic_eq,
                     size: 100,
-                    color: Colors.blueAccent,
+                    color: AppColors.primary,
                   )
-                : const Icon(Icons.mic_none, size: 100, color: Colors.grey),
+                : Icon(
+                    Icons.mic_none,
+                    size: 100,
+                    color: isDark
+                        ? AppColors.darkTextSub
+                        : AppColors.lightTextSub,
+                  ),
             const SizedBox(height: 40),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
                 _currentResult,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: GoogleFonts.rajdhani(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: isDark ? AppColors.darkText : AppColors.lightText,
                 ),
               ),
             ),
@@ -136,9 +153,13 @@ class _YamnetScreenState extends State<YamnetScreen> {
                 margin: const EdgeInsets.symmetric(horizontal: 40),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
+                  color: isDark ? AppColors.darkCard : AppColors.lightCard,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white24),
+                  border: Border.all(
+                    color: isDark
+                        ? AppColors.darkBorder
+                        : AppColors.lightBorder,
+                  ),
                 ),
                 child: Column(
                   children: _topResults.map((res) {
@@ -150,16 +171,18 @@ class _YamnetScreenState extends State<YamnetScreen> {
                           Flexible(
                             child: Text(
                               res.label,
-                              style: const TextStyle(
-                                color: Colors.white70,
+                              style: GoogleFonts.inter(
+                                color: isDark
+                                    ? AppColors.darkTextSub
+                                    : AppColors.lightTextSub,
                                 fontSize: 16,
                               ),
                             ),
                           ),
                           Text(
                             "${(res.score * 100).toStringAsFixed(1)}%",
-                            style: const TextStyle(
-                              color: Colors.blueAccent,
+                            style: GoogleFonts.inter(
+                              color: AppColors.primary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -177,11 +200,11 @@ class _YamnetScreenState extends State<YamnetScreen> {
                 height: 80,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: _isListening ? Colors.redAccent : Colors.blueAccent,
+                  color: _isListening ? AppColors.error : AppColors.primary,
                   boxShadow: [
                     BoxShadow(
                       color:
-                          (_isListening ? Colors.redAccent : Colors.blueAccent)
+                          (_isListening ? AppColors.error : AppColors.primary)
                               .withOpacity(0.4),
                       blurRadius: 20,
                       spreadRadius: 5,
@@ -283,12 +306,10 @@ class AudioClassifier {
     _audioSubscription = stream.listen((Uint8List data) {
       final Int16List int16Data = data.buffer.asInt16List();
 
-      // Convert int16 to float32 normalized to [-1, 1]
       for (final sample in int16Data) {
         _audioBuffer.add(sample / 32768.0);
       }
 
-      // Process with 50% overlap for better detection
       while (_audioBuffer.length >= inputSamples) {
         final chunk = List<double>.from(_audioBuffer.sublist(0, inputSamples));
         _audioBuffer.removeRange(0, inputSamples ~/ 2);
@@ -304,19 +325,14 @@ class AudioClassifier {
     if (_interpreter == null) return;
 
     try {
-      // Preprocess waveform
       final processed = _preprocessWaveform(waveform);
 
-      // Create input tensor [15600]
       final inputTensor = Float32List.fromList(processed);
 
-      // Create output tensor [521]
       final outputTensor = Float32List(521);
 
-      // Run inference
       _interpreter!.run(inputTensor.buffer, outputTensor.buffer);
 
-      // Process and filter results
       _processResults(outputTensor, onResult);
     } catch (e, stack) {
       dev.log("Inference error: $e");
@@ -324,21 +340,17 @@ class AudioClassifier {
     }
   }
 
-  /// Preprocess waveform: remove DC offset and normalize
   List<double> _preprocessWaveform(List<double> waveform) {
     // Remove DC offset (center around zero)
     final mean = waveform.reduce((a, b) => a + b) / waveform.length;
     final centered = waveform.map((x) => x - mean).toList();
 
-    // Find peak amplitude
     double maxAbs = 0.0;
     for (final sample in centered) {
       final abs = sample.abs();
       if (abs > maxAbs) maxAbs = abs;
     }
 
-    // Normalize to [-1, 1] only if signal is strong enough
-    // This prevents amplifying background noise
     if (maxAbs > 0.001) {
       return centered.map((x) => x / maxAbs).toList();
     }
@@ -350,20 +362,17 @@ class AudioClassifier {
     Float32List scores,
     Function(List<Classification>) onResult,
   ) {
-    // Apply sigmoid to convert logits to probabilities
     final probabilities = <double>[];
     for (int i = 0; i < scores.length; i++) {
       probabilities.add(1.0 / (1.0 + math.exp(-scores[i])));
     }
 
-    // Create sorted list of predictions
     final indexed = <MapEntry<int, double>>[];
     for (int i = 0; i < probabilities.length; i++) {
       indexed.add(MapEntry(i, probabilities[i]));
     }
     indexed.sort((a, b) => b.value.compareTo(a.value));
 
-    // Log top 10 for debugging
     final top10 = indexed
         .take(10)
         .map((e) {
@@ -372,7 +381,6 @@ class AudioClassifier {
         .join('\n');
     dev.log("Top 10 predictions:\n$top10");
 
-    // Filter noise labels
     final noiseLabels = {
       'Static',
       'White noise',
@@ -383,13 +391,11 @@ class AudioClassifier {
       'Silence',
     };
 
-    // Get non-noise predictions above threshold
     final nonNoise = indexed
         .where((e) => !noiseLabels.contains(_labels[e.key]) && e.value > 0.25)
         .take(5)
         .toList();
 
-    // Use non-noise if available, otherwise top 5
     final topResults = (nonNoise.isNotEmpty ? nonNoise : indexed.take(5))
         .map((e) => Classification(_labels[e.key], e.value))
         .toList();
