@@ -12,6 +12,8 @@ import 'package:echosee_app/provider/sub_title_provider.dart';
 import 'package:echosee_app/provider/trans_script_provider.dart';
 import 'package:echosee_app/signup_screen.dart';
 import 'package:echosee_app/splash_screen.dart';
+import 'package:echosee_app/terms_of_service_screen.dart';
+import 'package:echosee_app/privacy_policy_screen.dart';
 import 'package:echosee_app/yamnet_module/yamnet_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -64,6 +66,8 @@ class MyApp extends StatelessWidget {
         AppRoutes.yamnet: (context) => const YamnetScreen(),
         AppRoutes.login: (context) => const LoginScreen(),
         AppRoutes.signup: (context) => const SignupScreen(),
+        AppRoutes.termsOfService: (context) => const TermsOfServiceScreen(),
+        AppRoutes.privacyPolicy: (context) => const PrivacyPolicyScreen(),
       },
     );
   }

@@ -152,33 +152,6 @@ class SettingsScreen extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                             SizedBox(height: size.height * 0.008),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: sp.isPremium
-                                    ? AppColors.accent.withOpacity(0.2)
-                                    : AppColors.primary.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: sp.isPremium
-                                      ? AppColors.accent.withOpacity(0.5)
-                                      : AppColors.primary.withOpacity(0.3),
-                                ),
-                              ),
-                              child: Text(
-                                sp.isPremium ? '⭐ Premium' : 'Free Plan',
-                                style: GoogleFonts.rajdhani(
-                                  fontSize: size.width * 0.03,
-                                  fontWeight: FontWeight.w700,
-                                  color: sp.isPremium
-                                      ? AppColors.accentGlow
-                                      : AppColors.primary,
-                                ),
-                              ),
-                            ),
                           ],
                         ),
                       ),
@@ -217,7 +190,10 @@ class SettingsScreen extends StatelessWidget {
                       icon: Icons.description_rounded,
                       label: 'Terms of Service',
                       color: AppColors.primary,
-                      onTap: () => _launchUrl('https://your-website.com/terms'),
+                      onTap: () => Navigator.pushNamed(
+                        context,
+                        AppRoutes.termsOfService,
+                      ),
                     ),
                     const Divider(height: 1, indent: 56),
                     _SettingsTile(
@@ -225,7 +201,7 @@ class SettingsScreen extends StatelessWidget {
                       label: 'Privacy Policy',
                       color: AppColors.primary,
                       onTap: () =>
-                          _launchUrl('https://your-website.com/privacy'),
+                          Navigator.pushNamed(context, AppRoutes.privacyPolicy),
                     ),
                   ],
                 ),

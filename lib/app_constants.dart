@@ -154,4 +154,6 @@ class AppRoutes {
   static const String yamnet = '/yamnet';
   static const String login = '/login';
   static const String signup = '/signup';
+  static const String termsOfService = '/terms-of-service';
+  static const String privacyPolicy = '/privacy-policy';
 }
