@@ -159,7 +159,9 @@ class LoginScreen extends StatelessWidget {
                                   Align(
                                     alignment: Alignment.centerRight,
                                     child: GestureDetector(
-                                      onTap: () {},
+                                      onTap: () {
+                                        Navigator.pushNamed(context, AppRoutes.forgotPassword);
+                                      },
                                       child: Text(
                                         'Forgot Password?',
                                         style: TextStyle(
