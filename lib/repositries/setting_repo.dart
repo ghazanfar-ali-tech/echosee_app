@@ -1,18 +1,28 @@
 import 'package:echosee_app/data_base/sqlite_db.dart';
 import 'package:echosee_app/models/model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsRepository {
   final DatabaseHelper _db;
+  static const String _darkModeKey = 'dark_mode';
 
   SettingsRepository({DatabaseHelper? db}) : _db = db ?? DatabaseHelper();
 
   Future<SettingsModel> getSettings() async {
     final map = await _db.getSettings();
-    if (map == null) return const SettingsModel();
-    return SettingsModel.fromMap(map);
+    final prefs = await SharedPreferences.getInstance();
+    final isDarkMode = prefs.getBool(_darkModeKey) ?? false;
+
+    if (map == null) return SettingsModel(isDarkMode: isDarkMode);
+    return SettingsModel.fromMap(map).copyWith(isDarkMode: isDarkMode);
   }
 
   Future<void> saveSettings(SettingsModel settings) async {
+    // Save dark mode to SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_darkModeKey, settings.isDarkMode);
+
+    // Save everything else to SQLite
     await _db.updateSettings(settings.toMap());
   }
 
@@ -22,8 +32,10 @@ class SettingsRepository {
 
     switch (key) {
       case 'dark_mode':
-        updated = current.copyWith(isDarkMode: value as bool);
-        break;
+        // Save only to SharedPreferences, skip SQLite for this key
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(_darkModeKey, value as bool);
+        return;
       case 'font_size':
         updated = current.copyWith(fontSize: value as double);
         break;

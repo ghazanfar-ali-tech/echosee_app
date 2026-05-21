@@ -107,7 +107,7 @@ class LoginScreen extends StatelessWidget {
                                 children: [
                                   CustomTextField(
                                     hintText: 'Gmail',
-                                    prefixIcon: Icons.email_rounded,
+                                    prefixIcon: Icons.email_outlined,
                                     controller: provider.emailController,
                                     isDark: AppConstants.getColors(
                                       context,
@@ -160,7 +160,10 @@ class LoginScreen extends StatelessWidget {
                                     alignment: Alignment.centerRight,
                                     child: GestureDetector(
                                       onTap: () {
-                                        Navigator.pushNamed(context, AppRoutes.forgotPassword);
+                                        Navigator.pushNamed(
+                                          context,
+                                          AppRoutes.forgotPassword,
+                                        );
                                       },
                                       child: Text(
                                         'Forgot Password?',
@@ -232,28 +235,33 @@ class LoginScreen extends StatelessWidget {
                                   ),
                                   SizedBox(height: size.height * 0.022),
 
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: roundedButton(
-                                      gradientColors: [
-                                        Color.fromARGB(255, 42, 63, 94),
-                                        Color.fromARGB(255, 42, 63, 94),
-                                      ],
-                                      text: 'Continue with google',
-                                      isLoading: provider.isGoogleLoading,
-                                      onTap: () {
-                                        provider.loginWithGoogle(context);
-                                      },
-                                      leadingWidget: provider.isGoogleLoading
-                                          ? null
-                                          : googleIcon(size),
-                                      icon: Icons.g_mobiledata,
-                                      radius: 12,
-                                      useGradient: false,
-                                      //  borderColor: cardBorder,
-                                      textColor: Colors.grey.shade400,
-                                      // leadingWidget: googleIcon(size),
-                                    ),
+                                  roundedButton(
+                                    progressIndcatorColor:
+                                        AppConstants.getColors(context).isDark
+                                        ? Colors.white
+                                        : Colors.blue,
+                                    gradientColors:
+                                        AppConstants.getColors(context).isDark
+                                        ? [
+                                            Color.fromARGB(255, 42, 63, 94),
+                                            Color.fromARGB(255, 42, 63, 94),
+                                          ]
+                                        : [Colors.transparent],
+                                    text: 'Continue with google',
+                                    isLoading: provider.isGoogleLoading,
+                                    onTap: () {
+                                      provider.loginWithGoogle(context);
+                                    },
+                                    leadingWidget: provider.isGoogleLoading
+                                        ? null
+                                        : googleIcon(size),
+                                    icon: Icons.g_mobiledata,
+                                    radius: 12,
+                                    borderColor: Colors.grey,
+                                    useGradient: false,
+                                    //  borderColor: cardBorder,
+                                    textColor: const Color(0xFF6780A9),
+                                    // leadingWidget: googleIcon(size),
                                   ),
                                   SizedBox(height: size.height * 0.025),
 

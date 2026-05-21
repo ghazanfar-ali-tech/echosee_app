@@ -1,3 +1,4 @@
+import 'package:echosee_app/app_constants.dart';
 import 'package:flutter/material.dart';
 
 Widget roundedButton({
@@ -12,6 +13,7 @@ Widget roundedButton({
   Color? textColor,
   Widget? leadingWidget,
   bool useGradient = true,
+  Color? progressIndcatorColor,
 }) {
   return GestureDetector(
     onTap: isLoading ? null : onTap,
@@ -38,14 +40,14 @@ Widget roundedButton({
             : null,
       ),
       child: isLoading
-          ? const Row(
+          ? Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SizedBox(
                   height: 20,
                   width: 20,
                   child: CircularProgressIndicator(
-                    color: Colors.white,
+                    color: progressIndcatorColor,
                     strokeWidth: 2.5,
                   ),
                 ),

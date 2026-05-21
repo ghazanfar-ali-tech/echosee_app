@@ -15,7 +15,7 @@ class SubtitleDisplay extends StatelessWidget {
       builder: (_, subtitleProv, settingsProv, __) {
         final position = settingsProv.subtitlePosition;
         final fontSize = settingsProv.fontSize;
-        final color = settingsProv.subtitleColor;
+        final color = Color(settingsProv.subtitleColor);
 
         return Align(
           alignment: _getAlignment(position),

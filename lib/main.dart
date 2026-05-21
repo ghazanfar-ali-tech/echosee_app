@@ -19,6 +19,7 @@ import 'package:echosee_app/yamnet_module/yamnet_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,10 +33,15 @@ void main() async {
     ),
   );
 
+  final prefs = await SharedPreferences.getInstance();
+  final savedDarkMode = prefs.getBool('dark_mode') ?? false;
+
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(
+          create: (_) => SettingsProvider(initialDarkMode: savedDarkMode),
+        ),
         ChangeNotifierProvider(create: (_) => SubtitleProvider()),
         ChangeNotifierProvider(create: (_) => BluetoothProvider()),
         ChangeNotifierProvider(create: (_) => TranscriptProvider()),
