@@ -103,16 +103,10 @@ class _BottomNav extends StatelessWidget {
               ),
 
               _NavItem(
-                icon: Icons.swipe_vertical_sharp,
-                label: 'yamnet',
-                isSelected: currentIndex == 3,
-                onTap: () => onTap(3),
-              ),
-              _NavItem(
                 icon: Icons.tune_rounded,
                 label: 'Settings',
-                isSelected: currentIndex == 4,
-                onTap: () => onTap(4),
+                isSelected: currentIndex == 3,
+                onTap: () => onTap(3),
               ),
             ],
           ),

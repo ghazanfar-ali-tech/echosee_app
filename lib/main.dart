@@ -16,14 +16,15 @@ import 'package:echosee_app/splash_screen.dart';
 import 'package:echosee_app/terms_of_service_screen.dart';
 import 'package:echosee_app/privacy_policy_screen.dart';
 import 'package:echosee_app/forgot_password_screen.dart';
-import 'package:echosee_app/yamnet_module/yamnet_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await NotificationService().init();
 
   await Firebase.initializeApp(
@@ -72,7 +73,7 @@ class MyApp extends StatelessWidget {
         AppRoutes.splash: (context) => const SplashScreen(),
         AppRoutes.bluetooth: (context) => const BluetoothHomePage(),
         AppRoutes.home: (context) => const HomeScreen(),
-        AppRoutes.yamnet: (context) => const YamnetScreen(),
+        //  AppRoutes.yamnet: (context) => const YamnetScreen(),
         AppRoutes.login: (context) => const LoginScreen(),
         AppRoutes.signup: (context) => const SignupScreen(),
         AppRoutes.forgotPassword: (context) => const ForgotPasswordScreen(),

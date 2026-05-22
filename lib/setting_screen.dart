@@ -191,9 +191,7 @@ class SettingsScreen extends StatelessWidget {
                 child: _SettingsSection(
                   title: 'Notifications',
                   isDark: isDark,
-                  children: [
-                    _NotificationsToggle(sp: sp, isDark: isDark),
-                  ],
+                  children: [_NotificationsToggle(sp: sp, isDark: isDark)],
                 ),
               ),
               SizedBox(height: size.height * 0.025),
@@ -649,7 +647,7 @@ class _PremiumBanner extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Text(
-                'EchoSee Freemium',
+                'EchoSee Preemium',
                 style: GoogleFonts.rajdhani(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
