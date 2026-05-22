@@ -1,17 +1,12 @@
-import 'package:echosee_app/app_constants.dart';
 import 'package:echosee_app/app_theme.dart';
 import 'package:echosee_app/bluetooth_screen.dart';
 
 import 'package:echosee_app/provider/bluetooth_provider.dart';
 import 'package:echosee_app/provider/setting_provider.dart';
 import 'package:echosee_app/provider/sub_title_provider.dart';
-import 'package:echosee_app/provider/trans_script_provider.dart';
 import 'package:echosee_app/setting_screen.dart';
 import 'package:echosee_app/speech_to_text_screen.dart';
 import 'package:echosee_app/transcript_screen.dart';
-import 'package:echosee_app/widgets/animated_widget.dart';
-import 'package:echosee_app/widgets/subtitle_widget.dart';
-import 'package:echosee_app/yamnet_module/yamnet_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -45,7 +40,8 @@ class _HomeScreenState extends State<HomeScreen> {
           BluetoothHomePage(),
           SubtitleTab(),
           TranscriptsTab(),
-          const YamnetScreen(),
+
+          ///  const YamnetScreen(),
           SettingsScreen(),
         ],
       ),
