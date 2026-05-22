@@ -1,5 +1,6 @@
 import 'package:echosee_app/app_constants.dart';
 import 'package:echosee_app/services/auth_services.dart';
+import 'package:echosee_app/services/notification_services.dart';
 import 'package:echosee_app/widgets/utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -52,7 +53,15 @@ class LoginProvider extends ChangeNotifier {
         password: passwordController.text.trim(),
       );
       await AuthService.saveLoginState();
+
+      final user = FirebaseAuth.instance.currentUser;
+      final name = user?.displayName ?? user?.email?.split('@').first ?? 'User';
+
       Utils.toastMessage('Login successfully!');
+      await NotificationService().show(
+        title: 'Welcome Back, $name! ',
+        body: 'You have successfully logged in.',
+      );
       _emailController.clear();
       _passwordController.clear();
 
@@ -89,7 +98,6 @@ class LoginProvider extends ChangeNotifier {
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
-      // user cancelled
       if (googleUser == null) {
         _isGoogleLoading = false;
         notifyListeners();
@@ -106,9 +114,16 @@ class LoginProvider extends ChangeNotifier {
 
       await FirebaseAuth.instance.signInWithCredential(credential);
 
-      await AuthService.saveLoginState(); // ✅ save session
+      await AuthService.saveLoginState();
+
+      final user = FirebaseAuth.instance.currentUser;
+      final name = user?.displayName ?? googleUser.displayName ?? 'User';
 
       Utils.toastMessage('Login successfully!');
+      await NotificationService().show(
+        title: 'Welcome Back, $name! ',
+        body: 'You have successfully logged in.',
+      );
 
       if (context.mounted) {
         Navigator.pushReplacementNamed(context, AppRoutes.home);

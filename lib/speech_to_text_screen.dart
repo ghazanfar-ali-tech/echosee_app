@@ -234,6 +234,7 @@ class _IdleState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: FadeSlideIn(
         child: Column(
@@ -276,7 +277,9 @@ class _IdleState extends StatelessWidget {
               'Real-time subtitles for your EchoSee glasses',
               style: GoogleFonts.inter(
                 fontSize: 13,
-                color: AppColors.darkTextMuted,
+                color: isDark
+                    ? AppColors.darkTextMuted
+                    : AppColors.lightTextMuted,
               ),
               textAlign: TextAlign.center,
             ),
@@ -368,6 +371,7 @@ class _SubtitleControls extends StatelessWidget {
       if (settingsProv.isPremium) ...AppConstants.premiumLanguages,
     ];
     final selectedLang = settingsProv.selectedLanguage;
+    final midPoint = (languages.length / 2).ceil();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
@@ -376,54 +380,41 @@ class _SubtitleControls extends StatelessWidget {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: languages.map((lang) {
-                final isSelected = lang['code'] == selectedLang;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ScaleTap(
-                    onTap: () => settingsProv.setLanguage(lang['code']!),
-                    child: AnimatedContainer(
-                      duration: AppConstants.animNormal,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppColors.primary.withOpacity(0.15)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: isSelected
-                              ? AppColors.primary.withOpacity(0.5)
-                              : AppColors.darkBorder,
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            lang['flag']!,
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            lang['name']!,
-                            style: GoogleFonts.rajdhani(
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : AppColors.darkTextSub,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
+              children: [
+                ...languages.take(midPoint).map((lang) {
+                  final isSelected = lang['code'] == selectedLang;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: ScaleTap(
+                      onTap: () => settingsProv.setLanguage(lang['code']!),
+                      child: _buildLanguageChip(lang, isSelected, context),
+                    ),
+                  );
+                }).toList(),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Image(
+                    height: 50,
+                    width: 50,
+                    image: AssetImage(
+                      'assets/icons/icon-park_translation3.png',
                     ),
                   ),
-                );
-              }).toList(),
+                ),
+                SizedBox(width: 4),
+
+                ...languages.skip(midPoint).map((lang) {
+                  final isSelected = lang['code'] == selectedLang;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ScaleTap(
+                      onTap: () => settingsProv.setLanguage(lang['code']!),
+                      child: _buildLanguageChip(lang, isSelected, context),
+                    ),
+                  );
+                }).toList(),
+              ],
             ),
           ),
           const SizedBox(height: 20),
@@ -438,11 +429,17 @@ class _SubtitleControls extends StatelessWidget {
                   height: 48,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.darkBorder),
+                    border: Border.all(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.darkBorder
+                          : AppColors.lightBorder,
+                    ),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.delete_outline_rounded,
-                    color: AppColors.darkTextMuted,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.darkTextMuted
+                        : AppColors.lightTextMuted,
                     size: 22,
                   ),
                 ),
@@ -518,6 +515,46 @@ class _SubtitleControls extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLanguageChip(
+    Map<String, String> lang,
+    bool isSelected,
+    BuildContext context,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return AnimatedContainer(
+      duration: AppConstants.animNormal,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? AppColors.primary.withOpacity(0.15)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isSelected
+              ? AppColors.primary.withOpacity(0.5)
+              : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(lang['flag']!, style: const TextStyle(fontSize: 16)),
+          const SizedBox(width: 6),
+          Text(
+            lang['name']!,
+            style: GoogleFonts.rajdhani(
+              color: isSelected
+                  ? AppColors.primary
+                  : (isDark ? AppColors.darkTextSub : AppColors.lightTextSub),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),

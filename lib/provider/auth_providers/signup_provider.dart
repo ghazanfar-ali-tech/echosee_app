@@ -1,5 +1,6 @@
 import 'package:echosee_app/app_constants.dart';
 import 'package:echosee_app/services/auth_services.dart';
+import 'package:echosee_app/services/notification_services.dart';
 import 'package:echosee_app/widgets/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -68,6 +69,12 @@ class SignupProvider extends ChangeNotifier {
         password: passwordController.text.trim(),
       );
       await AuthService.saveLoginState();
+      final user = FirebaseAuth.instance.currentUser;
+      final name = user?.displayName ?? user?.email?.split('@').first ?? 'User';
+      await NotificationService().show(
+        title: 'Welcome Back, $name! ',
+        body: 'You have successfully logged in.',
+      );
       Utils.toastMessage('Account created successfully!');
 
       nameController.clear();

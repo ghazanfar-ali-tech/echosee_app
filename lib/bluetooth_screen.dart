@@ -7,13 +7,9 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart' as ble;
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
-// ─── Enums ────────────────────────────────────────────────────────────────────
-
 enum BtTabType { classic, ble }
 
 enum ConnectionStatus { disconnected, connecting, connected }
-
-// ─── Unified Device Model ─────────────────────────────────────────────────────
 
 class UnifiedDevice {
   final String name;
@@ -37,8 +33,6 @@ class UnifiedDevice {
       bleDevice = d;
 }
 
-// ─── Home Page ────────────────────────────────────────────────────────────────
-
 class BluetoothHomePage extends StatefulWidget {
   const BluetoothHomePage({super.key});
 
@@ -50,18 +44,14 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
     with TickerProviderStateMixin {
   late TabController _tabController;
 
-  // ── Speech & TTS ──
   final SpeechToText _stt = SpeechToText();
   final FlutterTts _tts = FlutterTts();
   bool _sttAvailable = false;
 
-  /// Which tab is currently recording: 0 = classic, 1 = ble, null = none
   int? _recordingTab;
 
-  /// Live transcript shown while recording
   String _liveTranscript = '';
 
-  // ── Classic Bluetooth ──
   final BluetoothClassic _classicPlugin = BluetoothClassic();
   List<UnifiedDevice> _classicDevices = [];
   List<UnifiedDevice> _pairedDevices = [];
@@ -73,7 +63,6 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
   Uint8List _classicData = Uint8List(0);
   bool _classicListenerAttached = false;
 
-  // ── BLE ──
   static const String _serviceUUID = "12345678-1234-1234-1234-123456789abc";
   static const String _charUUID = "abcdefab-1234-5678-1234-abcdefabcdef";
 
@@ -109,13 +98,10 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
     super.dispose();
   }
 
-  // ─── Speech Init ──────────────────────────────────────────────────────────
-
   Future<void> _initSpeech() async {
     _sttAvailable = await _stt.initialize(
       onError: (e) => debugPrint('STT error: $e'),
       onStatus: (s) {
-        // When listening stops (e.g. silence), finalise and send
         if (s == SpeechToText.doneStatus && _recordingTab != null) {
           _onSpeechDone();
         }
@@ -131,9 +117,6 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
     await _tts.setPitch(1.0);
   }
 
-  // ─── Speech Recording ─────────────────────────────────────────────────────
-
-  /// Start recording for the given tab index (0 = classic, 1 = ble)
   Future<void> _startRecording(int tabIndex) async {
     if (!_sttAvailable) {
       _showErrorSnackbar('Microphone not available. Check permissions.');
@@ -152,7 +135,7 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
     await _stt.listen(
       onResult: (result) {
         setState(() => _liveTranscript = result.recognizedWords);
-        // Auto-send when a final result arrives
+
         if (result.finalResult && result.recognizedWords.isNotEmpty) {
           _onSpeechDone();
         }
@@ -188,14 +171,10 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
     }
   }
 
-  // ─── TTS Playback ─────────────────────────────────────────────────────────
-
   Future<void> _speak(String text) async {
     await _tts.stop();
     await _tts.speak(text);
   }
-
-  // ─── Classic Methods ──────────────────────────────────────────────────────
 
   Future<void> _initClassic() async {
     try {
@@ -291,7 +270,7 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
           });
           final text = String.fromCharCodes(data).trim();
           _addClassicLog('Received: $text');
-          // 🔊 Speak received text aloud
+
           if (text.isNotEmpty) _speak(text);
         },
         onError: (e) {
@@ -354,8 +333,6 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
       if (_classicLog.length > 50) _classicLog.removeLast();
     });
   }
-
-  // ─── BLE Methods ──────────────────────────────────────────────────────────
 
   Future<void> _startBleScan() async {
     await _bleScanSub?.cancel();
@@ -465,7 +442,7 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
                     _bleReceivedData.removeLast();
                 });
                 _addBleLog('Received: $text');
-                // 🔊 Speak received text aloud
+
                 if (text.isNotEmpty) _speak(text);
               });
               _addBleLog('✅ TX ready (notifications on)');
@@ -529,8 +506,6 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
     });
   }
 
-  // ─── Helpers ──────────────────────────────────────────────────────────────
-
   String _timestamp() {
     final now = DateTime.now();
     return '${now.hour.toString().padLeft(2, '0')}:'
@@ -585,8 +560,6 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
       ),
     );
   }
-
-  // ─── Build ────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -683,8 +656,6 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
     decoration: BoxDecoration(color: color, shape: BoxShape.circle),
   );
 
-  // ─── Classic Tab ──────────────────────────────────────────────────────────
-
   Widget _buildClassicTab() {
     return Column(
       children: [
@@ -774,8 +745,6 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
     );
   }
 
-  // ─── BLE Tab ──────────────────────────────────────────────────────────────
-
   Widget _buildBleTab() {
     return Column(
       children: [
@@ -848,8 +817,6 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
       ],
     );
   }
-
-  // ─── Shared Widgets ───────────────────────────────────────────────────────
 
   Widget _buildStatusBanner(
     String deviceName,
@@ -1298,8 +1265,6 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
     );
   }
 
-  // ─── Send Box with Voice Button ───────────────────────────────────────────
-
   /// [tabIndex] 0 = classic, 1 = ble
   Widget _buildSendBox({
     required int tabIndex,
@@ -1324,7 +1289,6 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Live transcript preview while recording
               if (isRecording && _liveTranscript.isNotEmpty)
                 Container(
                   width: double.infinity,
@@ -1354,7 +1318,6 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
 
               Row(
                 children: [
-                  // ── Mic button ──
                   GestureDetector(
                     onTap: () async {
                       if (isRecording) {
@@ -1362,7 +1325,7 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
                       } else {
                         await _startRecording(tabIndex);
                       }
-                      // Rebuild to reflect state
+
                       if (mounted) setState(() {});
                     },
                     child: AnimatedContainer(
@@ -1383,7 +1346,6 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
 
                   const SizedBox(width: 10),
 
-                  // ── Text field ──
                   Expanded(
                     child: TextField(
                       controller: controller,
@@ -1418,7 +1380,6 @@ class _BluetoothHomePageState extends State<BluetoothHomePage>
 
                   const SizedBox(width: 10),
 
-                  // ── Send button ──
                   GestureDetector(
                     onTap: () {
                       if (controller.text.isNotEmpty) {

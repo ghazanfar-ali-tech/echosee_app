@@ -35,6 +35,7 @@ class _TranscriptsTabState extends State<TranscriptsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Consumer2<TranscriptProvider, SettingsProvider>(
       builder: (_, tp, sp, __) {
         return Scaffold(
@@ -68,7 +69,10 @@ class _TranscriptsTabState extends State<TranscriptsTab> {
               if (!_searchExpanded && sp.isPremium)
                 IconButton(
                   onPressed: () => setState(() => _searchExpanded = true),
-                  icon: const Icon(Icons.search_rounded),
+                  icon: Icon(
+                    Icons.search_rounded,
+                    color: isDark ? AppColors.darkText : AppColors.lightText,
+                  ),
                 ),
               if (!sp.isPremium)
                 Padding(
@@ -80,13 +84,17 @@ class _TranscriptsTabState extends State<TranscriptsTab> {
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.darkBorder,
+                        color: isDark
+                            ? AppColors.darkBorder
+                            : AppColors.lightBorder,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         '${tp.transcripts.length}/${AppConstants.freeTranscriptLimit}',
                         style: GoogleFonts.rajdhani(
-                          color: AppColors.darkTextSub,
+                          color: isDark
+                              ? AppColors.darkTextSub
+                              : AppColors.lightTextSub,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -96,20 +104,20 @@ class _TranscriptsTabState extends State<TranscriptsTab> {
                 ),
             ],
           ),
-          body: _buildBody(tp, sp),
+          body: _buildBody(tp, sp, isDark),
         );
       },
     );
   }
 
-  Widget _buildBody(TranscriptProvider tp, SettingsProvider sp) {
+  Widget _buildBody(TranscriptProvider tp, SettingsProvider sp, bool isDark) {
     if (tp.status == TranscriptStatus.loading) {
       return _buildSkeleton();
     }
 
     final transcripts = tp.filteredTranscripts;
     if (transcripts.isEmpty) {
-      return _EmptyTranscripts();
+      return _EmptyTranscripts(isDark: isDark);
     }
 
     return ListView.builder(
@@ -124,6 +132,7 @@ class _TranscriptsTabState extends State<TranscriptsTab> {
             padding: const EdgeInsets.only(bottom: 12),
             child: _TranscriptCard(
               transcript: t,
+              isDark: isDark,
               onTap: () => _openTranscript(context, t, tp),
               onDelete: () => tp.deleteTranscript(t.id),
               onExport: sp.isPremium ? () => _export(context, t, tp) : null,
@@ -195,18 +204,37 @@ class _TranscriptsTabState extends State<TranscriptsTab> {
   }
 }
 
-class _TranscriptDetailScreen extends StatelessWidget {
+class _TranscriptDetailScreen extends StatefulWidget {
   final dynamic transcript;
   const _TranscriptDetailScreen({required this.transcript});
+
+  @override
+  State<_TranscriptDetailScreen> createState() =>
+      _TranscriptDetailScreenState();
+}
+
+class _TranscriptDetailScreenState extends State<_TranscriptDetailScreen> {
+  double _fontSize = 15.0;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
-        title: Text(transcript.languageFlag + '  ' + transcript.title),
+        title: Text(
+          widget.transcript.languageFlag + '  ' + widget.transcript.title,
+          style: GoogleFonts.rajdhani(
+            color: isDark ? AppColors.darkText : AppColors.lightText,
+          ),
+        ),
         actions: [
-          IconButton(icon: const Icon(Icons.share_rounded), onPressed: () {}),
+          IconButton(
+            icon: Icon(
+              Icons.share_rounded,
+              color: isDark ? AppColors.darkText : AppColors.lightText,
+            ),
+            onPressed: () {},
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -215,26 +243,45 @@ class _TranscriptDetailScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             FadeSlideIn(
-              child: Row(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   _MetaChip(
                     icon: Icons.calendar_today_outlined,
-                    label: transcript.formattedDate,
+                    label: widget.transcript.formattedDate,
+                    isDark: isDark,
                   ),
-                  const SizedBox(width: 8),
                   _MetaChip(
                     icon: Icons.timer_outlined,
-                    label: transcript.formattedDuration,
+                    label: widget.transcript.formattedDuration,
+                    isDark: isDark,
                   ),
-                  const SizedBox(width: 8),
                   _MetaChip(
                     icon: Icons.text_fields_rounded,
-                    label: '${transcript.wordCount} words',
+                    label: '${widget.transcript.wordCount} words',
+                    isDark: isDark,
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
+
+            FadeSlideIn(
+              delay: const Duration(milliseconds: 50),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: _FontSizeControls(
+                  fontSize: _fontSize,
+                  isDark: isDark,
+                  onFontSizeChanged: (newSize) {
+                    setState(() => _fontSize = newSize);
+                  },
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
             FadeSlideIn(
               delay: const Duration(milliseconds: 100),
               child: Container(
@@ -249,9 +296,9 @@ class _TranscriptDetailScreen extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  transcript.content,
+                  widget.transcript.content,
                   style: GoogleFonts.inter(
-                    fontSize: 15,
+                    fontSize: _fontSize,
                     height: 1.7,
                     color: isDark ? AppColors.darkText : AppColors.lightText,
                   ),
@@ -265,14 +312,99 @@ class _TranscriptDetailScreen extends StatelessWidget {
   }
 }
 
+class _FontSizeControls extends StatelessWidget {
+  final double fontSize;
+  final bool isDark;
+  final ValueChanged<double> onFontSizeChanged;
+
+  const _FontSizeControls({
+    required this.fontSize,
+    required this.isDark,
+    required this.onFontSizeChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ScaleTap(
+            onTap: fontSize > 12 ? () => onFontSizeChanged(fontSize - 1) : null,
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: fontSize > 12
+                    ? AppColors.primary.withOpacity(0.15)
+                    : Colors.transparent,
+              ),
+              child: Icon(
+                Icons.remove_rounded,
+                size: 18,
+                color: fontSize > 12
+                    ? AppColors.primary
+                    : (isDark
+                          ? AppColors.darkTextMuted
+                          : AppColors.lightTextMuted),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Aa',
+            style: GoogleFonts.rajdhani(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          ScaleTap(
+            onTap: fontSize < 24 ? () => onFontSizeChanged(fontSize + 1) : null,
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: fontSize < 24
+                    ? AppColors.primary.withOpacity(0.15)
+                    : Colors.transparent,
+              ),
+              child: Icon(
+                Icons.add_rounded,
+                size: 18,
+                color: fontSize < 24
+                    ? AppColors.primary
+                    : (isDark
+                          ? AppColors.darkTextMuted
+                          : AppColors.lightTextMuted),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TranscriptCard extends StatelessWidget {
   final dynamic transcript;
+  final bool isDark;
   final VoidCallback onTap;
   final VoidCallback onDelete;
   final VoidCallback? onExport;
 
   const _TranscriptCard({
     required this.transcript,
+    required this.isDark,
     required this.onTap,
     required this.onDelete,
     this.onExport,
@@ -280,8 +412,6 @@ class _TranscriptCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return ScaleTap(
       onTap: onTap,
       child: Container(
@@ -320,7 +450,9 @@ class _TranscriptCard extends StatelessWidget {
                   transcript.formattedDate,
                   style: GoogleFonts.inter(
                     fontSize: 11,
-                    color: AppColors.darkTextMuted,
+                    color: isDark
+                        ? AppColors.darkTextMuted
+                        : AppColors.lightTextMuted,
                   ),
                 ),
               ],
@@ -342,11 +474,13 @@ class _TranscriptCard extends StatelessWidget {
                 _MetaChip(
                   icon: Icons.timer_outlined,
                   label: transcript.formattedDuration,
+                  isDark: isDark,
                 ),
                 const SizedBox(width: 8),
                 _MetaChip(
                   icon: Icons.text_fields_rounded,
                   label: '${transcript.wordCount}w',
+                  isDark: isDark,
                 ),
                 const Spacer(),
                 if (onExport != null)
@@ -383,8 +517,13 @@ class _TranscriptCard extends StatelessWidget {
 class _MetaChip extends StatelessWidget {
   final IconData icon;
   final String label;
+  final bool isDark;
 
-  const _MetaChip({required this.icon, required this.label});
+  const _MetaChip({
+    required this.icon,
+    required this.label,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -414,6 +553,10 @@ class _MetaChip extends StatelessWidget {
 }
 
 class _EmptyTranscripts extends StatelessWidget {
+  final bool isDark;
+
+  const _EmptyTranscripts({required this.isDark});
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -432,7 +575,9 @@ class _EmptyTranscripts extends StatelessWidget {
               style: GoogleFonts.rajdhani(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: AppColors.darkTextMuted,
+                color: isDark
+                    ? AppColors.darkTextMuted
+                    : AppColors.lightTextMuted,
               ),
             ),
             const SizedBox(height: 8),
@@ -440,7 +585,9 @@ class _EmptyTranscripts extends StatelessWidget {
               'Start recording and save your conversations',
               style: GoogleFonts.inter(
                 fontSize: 13,
-                color: AppColors.darkTextMuted,
+                color: isDark
+                    ? AppColors.darkTextMuted
+                    : AppColors.lightTextMuted,
               ),
             ),
           ],
@@ -489,6 +636,7 @@ class _SearchFieldState extends State<_SearchField>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AnimatedBuilder(
       animation: _width,
       builder: (_, __) => SizeTransition(
@@ -498,10 +646,16 @@ class _SearchFieldState extends State<_SearchField>
           controller: widget.controller,
           onChanged: widget.onChanged,
           autofocus: true,
-          style: GoogleFonts.inter(color: AppColors.darkText),
+          style: GoogleFonts.inter(
+            color: isDark ? AppColors.darkText : AppColors.lightText,
+          ),
           decoration: InputDecoration(
             hintText: 'Search transcripts...',
-            hintStyle: GoogleFonts.inter(color: AppColors.darkTextMuted),
+            hintStyle: GoogleFonts.inter(
+              color: isDark
+                  ? AppColors.darkTextMuted
+                  : AppColors.lightTextMuted,
+            ),
             border: InputBorder.none,
             prefixIcon: const Icon(
               Icons.search_rounded,
@@ -509,9 +663,11 @@ class _SearchFieldState extends State<_SearchField>
             ),
             suffixIcon: IconButton(
               onPressed: widget.onClose,
-              icon: const Icon(
+              icon: Icon(
                 Icons.close_rounded,
-                color: AppColors.darkTextMuted,
+                color: isDark
+                    ? AppColors.darkTextMuted
+                    : AppColors.lightTextMuted,
               ),
             ),
           ),

@@ -10,6 +10,7 @@ import 'package:echosee_app/provider/bluetooth_provider.dart';
 import 'package:echosee_app/provider/setting_provider.dart';
 import 'package:echosee_app/provider/sub_title_provider.dart';
 import 'package:echosee_app/provider/trans_script_provider.dart';
+import 'package:echosee_app/services/notification_services.dart';
 import 'package:echosee_app/signup_screen.dart';
 import 'package:echosee_app/splash_screen.dart';
 import 'package:echosee_app/terms_of_service_screen.dart';
@@ -23,6 +24,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService().init();
 
   await Firebase.initializeApp(
     options: FirebaseOptions(
