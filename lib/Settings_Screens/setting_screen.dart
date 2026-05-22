@@ -88,7 +88,7 @@ class SettingsScreen extends StatelessWidget {
               style: GoogleFonts.orbitron(
                 fontSize: size.width * 0.05,
                 fontWeight: FontWeight.w700,
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),

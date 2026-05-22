@@ -116,12 +116,12 @@ class _SubtitleAppBar extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Text(
-                'EchoSee',
+                'Echosee',
                 style: GoogleFonts.orbitron(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
-                  letterSpacing: 1,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.3,
                 ),
               ),
             ],

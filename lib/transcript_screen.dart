@@ -53,13 +53,14 @@ class _TranscriptsTabState extends State<TranscriptsTab> {
                 : null,
             leading: !_searchExpanded
                 ? Padding(
-                    padding: const EdgeInsets.only(left: 16),
+                    padding: const EdgeInsets.only(left: 15),
                     child: Text(
-                      'EchoSee',
+                      'Transcripts',
                       style: GoogleFonts.orbitron(
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.3,
                       ),
                     ),
                   )
