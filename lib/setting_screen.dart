@@ -616,11 +616,13 @@ class _PremiumBanner extends StatelessWidget {
           colors: isDark
               ? [Color(0xFF2C0B59), Color(0xFF0D256C)]
               : [
-                  Color(0xFFD9B3F5), // deeper lilac purple
-                  Color(0xFFB8C8F8), // soft periwinkle blue (bottom-right)
+                  Color(0xFFEDF5FF), // light blue
+                  Color(0xFFEDDDFF), // light purple
+                  Color(0xFFFFE7F4), // light pink
                 ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          stops: isDark ? null : [0.0, 0.5, 1.0],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white.withOpacity(0.1)),
@@ -642,7 +644,7 @@ class _PremiumBanner extends StatelessWidget {
             children: [
               const Icon(
                 Icons.workspace_premium_rounded,
-                color: Color(0xFF9E54FF),
+                color: Color(0xFF4F46E5),
                 size: 24,
               ),
               const SizedBox(width: 10),
@@ -651,7 +653,7 @@ class _PremiumBanner extends StatelessWidget {
                 style: GoogleFonts.rajdhani(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF9E54FF),
+                  color: const Color(0xFF4F46E5),
                 ),
               ),
             ],
@@ -670,7 +672,7 @@ class _PremiumBanner extends StatelessWidget {
             width: double.infinity,
             height: 48,
             child: ElevatedButton(
-              onPressed: () {}, // Can add action to upgrade
+              onPressed: () {},
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.transparent,
                 shadowColor: Colors.transparent,
@@ -682,11 +684,27 @@ class _PremiumBanner extends StatelessWidget {
               child: Ink(
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF8A2BE2), Color(0xFF00E5FF)],
+                    colors: [
+                      Color(0xFF963CFB), // 0%
+                      Color(0xFFC663FF), // 50%
+                      Color(0xFFFF62F2),
+                    ],
+                    stops: [0.0, 0.5, 1.0],
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.25),
+                      blurRadius: 13,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: const Color(0xFFD952FF), // ← stroke color
+                    //width: 1.5, // ← adjust thickness
+                  ),
                 ),
                 child: Container(
                   alignment: Alignment.center,

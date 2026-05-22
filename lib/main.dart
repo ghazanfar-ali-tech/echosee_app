@@ -25,9 +25,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-  await NotificationService().init();
 
   await Firebase.initializeApp(
+    // ← Firebase FIRST
     options: FirebaseOptions(
       apiKey: Constants.apiKey,
       appId: Constants.appId,
@@ -35,6 +35,8 @@ void main() async {
       projectId: Constants.projectId,
     ),
   );
+
+  await NotificationService().init(); // ← Notifications AFTER
 
   final prefs = await SharedPreferences.getInstance();
   final savedDarkMode = prefs.getBool('dark_mode') ?? false;

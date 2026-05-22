@@ -46,7 +46,7 @@ class NotificationService {
       channelDescription: 'General notifications',
       importance: Importance.high,
       priority: Priority.high,
-      icon: '@drawable/ic_notification',
+      icon: '@mipmap/ic_launcher',
     );
 
     const details = NotificationDetails(android: androidDetails);
