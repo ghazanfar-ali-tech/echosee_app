@@ -185,6 +185,19 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               SizedBox(height: size.height * 0.025),
+
+              FadeSlideIn(
+                delay: const Duration(milliseconds: 90),
+                child: _SettingsSection(
+                  title: 'Notifications',
+                  isDark: isDark,
+                  children: [
+                    _NotificationsToggle(sp: sp, isDark: isDark),
+                  ],
+                ),
+              ),
+              SizedBox(height: size.height * 0.025),
+
               if (!sp.isPremium) ...[
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 30),
@@ -416,6 +429,50 @@ class _ThemeToggle extends StatelessWidget {
       trailing: Switch(
         value: sp.isDarkMode,
         onChanged: (_) => sp.toggleDarkMode(),
+        activeColor: AppColors.primary,
+      ),
+    );
+  }
+}
+
+class _NotificationsToggle extends StatelessWidget {
+  final SettingsProvider sp;
+  final bool isDark;
+  const _NotificationsToggle({required this.sp, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: AppColors.primary.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: AnimatedSwitcher(
+          duration: AppConstants.animNormal,
+          child: Icon(
+            sp.isNotificationsEnabled
+                ? Icons.notifications_active_rounded
+                : Icons.notifications_off_rounded,
+            key: ValueKey(sp.isNotificationsEnabled),
+            color: AppColors.primary,
+            size: 20,
+          ),
+        ),
+      ),
+      title: Text(
+        'Notifications',
+        style: GoogleFonts.rajdhani(
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+          color: isDark ? AppColors.darkText : AppColors.lightText,
+        ),
+      ),
+      trailing: Switch(
+        value: sp.isNotificationsEnabled,
+        onChanged: (value) => sp.setNotificationsEnabled(value),
         activeColor: AppColors.primary,
       ),
     );

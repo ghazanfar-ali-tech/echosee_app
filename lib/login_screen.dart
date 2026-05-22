@@ -238,7 +238,7 @@ class LoginScreen extends StatelessWidget {
                                   roundedButton(
                                     progressIndcatorColor:
                                         AppConstants.getColors(context).isDark
-                                        ? Colors.white
+                                        ? Colors.black.withAlpha(200)
                                         : Colors.blue,
                                     gradientColors:
                                         AppConstants.getColors(context).isDark
@@ -257,7 +257,10 @@ class LoginScreen extends StatelessWidget {
                                         : googleIcon(size),
                                     icon: Icons.g_mobiledata,
                                     radius: 12,
-                                    borderColor: Colors.grey,
+                                    borderColor:
+                                        AppConstants.getColors(context).isDark
+                                        ? Colors.transparent
+                                        : Colors.grey.withAlpha(100),
                                     useGradient: false,
                                     //  borderColor: cardBorder,
                                     textColor: const Color(0xFF6780A9),

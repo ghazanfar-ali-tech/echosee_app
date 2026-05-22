@@ -6,14 +6,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 class SettingsProvider extends ChangeNotifier {
   final SettingsRepository _repository;
   static const String _darkModeKey = 'dark_mode';
+  static const String _notificationsKey = 'notifications_enabled';
 
   late SettingsModel _settings;
+  bool _isNotificationsEnabled = true;
 
   SettingsProvider({
     SettingsRepository? repository,
-    bool initialDarkMode = false, // ← new param
+    bool initialDarkMode = false,
   }) : _repository = repository ?? SettingsRepository() {
-    // Set dark mode immediately — no async gap, no flash
     _settings = SettingsModel(isDarkMode: initialDarkMode);
     _loadOtherSettings();
   }
@@ -24,19 +25,32 @@ class SettingsProvider extends ChangeNotifier {
   int get subtitleColor => _settings.subtitleColor;
   String get selectedLanguage => _settings.selectedLanguage;
   bool get isPremium => _settings.isPremium;
+  bool get isNotificationsEnabled => _isNotificationsEnabled;
 
   // Load SQLite settings without touching dark mode
   Future<void> _loadOtherSettings() async {
     final settings = await _repository.getSettings();
     // Preserve the already-correct dark mode value
     _settings = settings.copyWith(isDarkMode: _settings.isDarkMode);
+
+    final prefs = await SharedPreferences.getInstance();
+    _isNotificationsEnabled = prefs.getBool(_notificationsKey) ?? true;
     notifyListeners();
+  }
+
+  Future<void> setNotificationsEnabled(bool value) async {
+    if (_isNotificationsEnabled == value) return;
+    _isNotificationsEnabled = value;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_notificationsKey, value);
   }
 
   Future<void> toggleDarkMode() async {
     final newValue = !_settings.isDarkMode;
     _settings = _settings.copyWith(isDarkMode: newValue);
-    notifyListeners(); // instant UI update
+    notifyListeners();
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_darkModeKey, newValue);
@@ -81,10 +95,8 @@ class SettingsProvider extends ChangeNotifier {
     await _repository.updateSetting('is_premium', value);
   }
 
-  // In SettingsProvider — add this public method
   Future<void> loadSettings() async {
     final settings = await _repository.getSettings();
-    // Preserve the already-correct dark mode from SharedPreferences
     _settings = settings.copyWith(isDarkMode: _settings.isDarkMode);
     notifyListeners();
   }
