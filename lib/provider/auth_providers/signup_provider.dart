@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class SignupProvider extends ChangeNotifier {
-  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+  // final GlobalKey<FormState> sginUpformKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -40,7 +40,10 @@ class SignupProvider extends ChangeNotifier {
   bool _isloading = false;
   bool get isLoading => _isloading;
 
-  void sigupWithEmail(BuildContext context) async {
+  void sigupWithEmail(
+    BuildContext context,
+    GlobalKey<FormState> formKey,
+  ) async {
     if (!formKey.currentState!.validate()) return;
     if (nameController.text.isEmpty ||
         emailController.text.isEmpty ||

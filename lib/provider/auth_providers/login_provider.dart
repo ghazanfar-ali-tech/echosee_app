@@ -1,13 +1,17 @@
 import 'package:echosee_app/app_constants.dart';
+import 'package:echosee_app/provider/setting_provider.dart';
 import 'package:echosee_app/services/auth_services.dart';
 import 'package:echosee_app/services/notification_services.dart';
 import 'package:echosee_app/widgets/utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart';
+import 'package:http/http.dart' as context;
+import 'package:provider/provider.dart';
 
 class LoginProvider extends ChangeNotifier {
-  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+  //final GlobalKey<FormState> loginformKey = GlobalKey<FormState>();
   bool _isloading = false;
   bool get isLoading => _isloading;
 
@@ -30,10 +34,11 @@ class LoginProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void loginWithEmail(BuildContext context) async {
-    if (!formKey.currentState!.validate()) {
-      return;
-    }
+  void loginWithEmail(
+    BuildContext context,
+    GlobalKey<FormState> formKey,
+  ) async {
+    if (!formKey.currentState!.validate()) return;
 
     if (emailController.text.isEmpty || passwordController.text.isEmpty) {
       Utils.toastMessage("Please fill all the fields!");
@@ -53,6 +58,10 @@ class LoginProvider extends ChangeNotifier {
         password: passwordController.text.trim(),
       );
       await AuthService.saveLoginState();
+
+      if (context.mounted) {
+        context.read<SettingsProvider>().listenToUserProfile();
+      }
 
       final user = FirebaseAuth.instance.currentUser;
       final name = user?.displayName ?? user?.email?.split('@').first ?? 'User';
@@ -115,6 +124,10 @@ class LoginProvider extends ChangeNotifier {
       await FirebaseAuth.instance.signInWithCredential(credential);
 
       await AuthService.saveLoginState();
+
+      if (context.mounted) {
+        context.read<SettingsProvider>().listenToUserProfile();
+      }
 
       final user = FirebaseAuth.instance.currentUser;
       final name = user?.displayName ?? googleUser.displayName ?? 'User';

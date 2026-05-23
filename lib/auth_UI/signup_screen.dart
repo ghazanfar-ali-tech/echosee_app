@@ -9,8 +9,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 class SignupScreen extends StatelessWidget {
-  const SignupScreen({super.key});
+  SignupScreen({super.key});
 
+  final GlobalKey<FormState> sginUpformKey = GlobalKey<FormState>();
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -102,7 +103,7 @@ class SignupScreen extends StatelessWidget {
                         Consumer<SignupProvider>(
                           builder: (context, signupProvider, child) {
                             return Form(
-                              key: signupProvider.formKey,
+                              key: sginUpformKey,
                               child: Column(
                                 children: [
                                   CustomTextField(
@@ -197,7 +198,10 @@ class SignupScreen extends StatelessWidget {
                                       text: 'SignUp',
                                       isLoading: signupProvider.isLoading,
                                       onTap: () {
-                                        signupProvider.sigupWithEmail(context);
+                                        signupProvider.sigupWithEmail(
+                                          context,
+                                          sginUpformKey,
+                                        );
                                       },
                                       icon: Icons.login,
                                       radius: 12,

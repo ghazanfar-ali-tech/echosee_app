@@ -4,7 +4,7 @@ import 'package:echosee_app/bluetooth_screen.dart';
 import 'package:echosee_app/provider/bluetooth_provider.dart';
 import 'package:echosee_app/provider/setting_provider.dart';
 import 'package:echosee_app/provider/sub_title_provider.dart';
-import 'package:echosee_app/setting_screen.dart';
+import 'package:echosee_app/Settings_Screens/setting_screen.dart';
 import 'package:echosee_app/speech_to_text_screen.dart';
 import 'package:echosee_app/transcript_screen.dart';
 import 'package:flutter/material.dart';

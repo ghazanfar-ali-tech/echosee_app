@@ -1,3 +1,4 @@
+import 'package:echosee_app/Settings_Screens/profile_screen.dart';
 import 'package:echosee_app/app_constants.dart';
 import 'package:echosee_app/app_theme.dart';
 import 'package:echosee_app/bluetooth_screen.dart';
@@ -76,11 +77,12 @@ class MyApp extends StatelessWidget {
         AppRoutes.bluetooth: (context) => const BluetoothHomePage(),
         AppRoutes.home: (context) => const HomeScreen(),
         //  AppRoutes.yamnet: (context) => const YamnetScreen(),
-        AppRoutes.login: (context) => const LoginScreen(),
-        AppRoutes.signup: (context) => const SignupScreen(),
+        AppRoutes.login: (context) => LoginScreen(),
+        AppRoutes.signup: (context) => SignupScreen(),
         AppRoutes.forgotPassword: (context) => const ForgotPasswordScreen(),
         AppRoutes.termsOfService: (context) => const TermsOfServiceScreen(),
         AppRoutes.privacyPolicy: (context) => const PrivacyPolicyScreen(),
+        AppRoutes.profile: (context) => const ProfileScreen(),
       },
     );
   }

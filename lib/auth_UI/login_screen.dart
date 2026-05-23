@@ -9,7 +9,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
+  LoginScreen({super.key});
+
+  final GlobalKey<FormState> loginformKey = GlobalKey<FormState>();
 
   @override
   Widget build(BuildContext context) {
@@ -102,7 +104,7 @@ class LoginScreen extends StatelessWidget {
                         Consumer<LoginProvider>(
                           builder: (context, provider, child) {
                             return Form(
-                              key: provider.formKey,
+                              key: loginformKey,
                               child: Column(
                                 children: [
                                   CustomTextField(
@@ -185,7 +187,10 @@ class LoginScreen extends StatelessWidget {
                                       text: 'login',
                                       isLoading: provider.isLoading,
                                       onTap: () {
-                                        provider.loginWithEmail(context);
+                                        provider.loginWithEmail(
+                                          context,
+                                          loginformKey,
+                                        );
                                       },
                                       icon: Icons.login,
                                       radius: 12,
