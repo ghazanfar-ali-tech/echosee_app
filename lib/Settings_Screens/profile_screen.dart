@@ -1,10 +1,15 @@
 import 'dart:io';
+import 'package:echosee_app/Settings_Screens/setting_widgets.dart';
+import 'package:echosee_app/app_constants.dart';
 import 'package:echosee_app/app_theme.dart';
 import 'package:echosee_app/provider/setting_provider.dart';
+import 'package:echosee_app/widgets/animated_widget.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -119,7 +124,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
 
       if (pickedFile != null) {
-        // Show loading
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -177,7 +181,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    // Show loading
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -270,10 +273,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
           body: SingleChildScrollView(
-            padding: EdgeInsets.all(size.width * 0.05),
+            padding: EdgeInsets.symmetric(horizontal: size.width * 0.01),
             child: Column(
               children: [
-                // Profile Picture Section
                 GestureDetector(
                   onTap: _isEditing ? () => _pickAndUploadImage(sp) : null,
                   child: Stack(
@@ -364,7 +366,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     SizedBox(
-                      height: 40, // only controls field height, not spacing
+                      height: 40,
                       child: TextField(
                         textAlign: TextAlign.center,
                         controller: _nameController,
@@ -372,7 +374,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         style: GoogleFonts.rajdhani(
                           fontSize: 30,
                           fontWeight: FontWeight.bold,
-                          height: 1.0, // 🔥 removes extra line height space
+                          height: 1.0,
                           color: isDark
                               ? AppColors.darkText
                               : AppColors.lightText,
@@ -389,13 +391,179 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       sp.userEmail ?? "",
                       style: GoogleFonts.rajdhani(
                         fontSize: 14,
-                        height: -1.0, // 🔥 removes line spacing
+                        height: -1.0,
                         color: isDark
                             ? AppColors.darkTextMuted
                             : AppColors.lightTextMuted,
                       ),
                     ),
                   ],
+                ),
+                SizedBox(height: 20),
+                Padding(
+                  padding: EdgeInsets.all(size.width * 0.04),
+                  child: Column(
+                    children: [
+                      SizedBox(height: size.height * 0.025),
+
+                      FadeSlideIn(
+                        delay: const Duration(milliseconds: 60),
+                        child: SettingsSection(
+                          title: 'Preferences',
+                          isDark: isDark,
+                          children: [
+                            FontSizeSetting(sp: sp, isDark: isDark),
+                            Divider(
+                              height: 1,
+
+                              color: isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.lightBorder,
+                            ),
+
+                            SettingsTile(
+                              icon: Icons.g_translate_rounded,
+                              label: 'Default Language',
+                              color: AppColors.primary,
+                              isDark: isDark,
+                              onTap: () {},
+                            ),
+
+                            Divider(
+                              height: 1,
+
+                              color: isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.lightBorder,
+                            ),
+                            // SizedBox(height: size.height * 0.01),
+                            ThemeToggle(sp: sp, isDark: isDark),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: size.height * 0.01),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? AppColors.darkSurface
+                              : AppColors.lightSurface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isDark
+                                ? AppColors.darkBorder
+                                : AppColors.lightBorder,
+                          ),
+                        ),
+                        child: SettingsTile(
+                          icon: Icons.switch_account_rounded,
+                          label: 'Speaker ID',
+                          color: AppColors.primary,
+                          isDark: isDark,
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Enabled',
+                                style: GoogleFonts.rajdhani(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                color: isDark
+                                    ? AppColors.darkTextMuted
+                                    : AppColors.lightTextMuted,
+                                size: 20,
+                              ),
+                            ],
+                          ),
+                          onTap: () {},
+                        ),
+                      ),
+                      SizedBox(height: size.height * 0.025),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8, bottom: 1),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            "Accounts".toUpperCase(),
+                            style: GoogleFonts.rajdhani(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: isDark
+                                  ? AppColors.lightBg
+                                  : AppColors.darkBorder,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      Container(
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? AppColors.darkSurface
+                              : AppColors.lightSurface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isDark
+                                ? AppColors.darkBorder
+                                : AppColors.lightBorder,
+                          ),
+                        ),
+                        child: SettingsTile(
+                          icon: Icons.workspace_premium_rounded,
+                          label: 'Subscription',
+                          color: AppColors.primary,
+                          isDark: isDark,
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF3CD),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: const Color(0xFFFFD700).withOpacity(0.4),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              'Freemium',
+                              style: GoogleFonts.rajdhani(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFFB8860B),
+                              ),
+                            ),
+                          ),
+                          onTap: () {},
+                        ),
+                      ),
+
+                      SizedBox(height: size.height * 0.02),
+
+                      SizedBox(height: size.height * 0.03),
+
+                      Center(
+                        child: Text(
+                          'EchoSee v1.0.0',
+                          style: GoogleFonts.rajdhani(
+                            fontSize: size.width * 0.032,
+                            color: isDark
+                                ? AppColors.darkTextMuted
+                                : AppColors.lightTextMuted,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: size.height * 0.02),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -404,4 +572,129 @@ class _ProfileScreenState extends State<ProfileScreen> {
       },
     );
   }
+}
+
+Future<void> _launchUrl(String url) async {
+  final uri = Uri.parse(url);
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+}
+
+void _showSnackBar(
+  BuildContext context, {
+  required String message,
+  Color? backgroundColor,
+  bool showLoader = false,
+  Duration duration = const Duration(seconds: 3),
+}) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      duration: duration,
+      backgroundColor:
+          backgroundColor ?? (isDark ? const Color(0xFF1E1E2E) : Colors.white),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.all(16),
+      elevation: 4,
+      content: Row(
+        children: [
+          if (showLoader) ...[
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  isDark ? AppColors.primary : AppColors.primary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+          ] else if (backgroundColor == Colors.green) ...[
+            const Icon(
+              Icons.check_circle_rounded,
+              color: Colors.green,
+              size: 18,
+            ),
+            const SizedBox(width: 12),
+          ] else if (backgroundColor == Colors.red) ...[
+            const Icon(Icons.error_rounded, color: Colors.red, size: 18),
+            const SizedBox(width: 12),
+          ] else ...[
+            Icon(
+              Icons.info_rounded,
+              color: isDark ? AppColors.primary : AppColors.primary,
+              size: 18,
+            ),
+            const SizedBox(width: 12),
+          ],
+          Expanded(
+            child: Text(
+              message,
+              style: GoogleFonts.rajdhani(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.darkText : AppColors.lightText,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+SnackBar _buildSnackBar({
+  required bool isDark,
+  required String message,
+  Color? backgroundColor,
+  bool showLoader = false,
+  Duration duration = const Duration(seconds: 3),
+}) {
+  return SnackBar(
+    duration: duration,
+    backgroundColor:
+        backgroundColor ?? (isDark ? const Color(0xFF1E1E2E) : Colors.white),
+    behavior: SnackBarBehavior.floating,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    margin: const EdgeInsets.all(16),
+    elevation: 4,
+    content: Row(
+      children: [
+        if (showLoader) ...[
+          SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+            ),
+          ),
+          const SizedBox(width: 12),
+        ] else if (backgroundColor == Colors.green) ...[
+          const Icon(Icons.check_circle_rounded, color: Colors.green, size: 18),
+          const SizedBox(width: 12),
+        ] else if (backgroundColor == Colors.red) ...[
+          const Icon(Icons.error_rounded, color: Colors.red, size: 18),
+          const SizedBox(width: 12),
+        ] else ...[
+          Icon(Icons.info_rounded, color: AppColors.primary, size: 18),
+          const SizedBox(width: 12),
+        ],
+        Expanded(
+          child: Text(
+            message,
+            style: GoogleFonts.rajdhani(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: isDark ? AppColors.darkText : AppColors.lightText,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }

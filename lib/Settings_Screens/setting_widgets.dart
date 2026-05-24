@@ -1,373 +1,34 @@
 import 'package:echosee_app/app_constants.dart';
 import 'package:echosee_app/app_theme.dart';
-import 'package:echosee_app/auth_UI/login_screen.dart';
 import 'package:echosee_app/provider/setting_provider.dart';
-import 'package:echosee_app/services/auth_services.dart';
 import 'package:echosee_app/widgets/animated_widget.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'dart:io';
-import 'package:image_picker/image_picker.dart';
 
-class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
-
-  Future<void> _launchUrl(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  void _showSnackBar(
-    BuildContext context, {
-    required String message,
-    Color? backgroundColor,
-    bool showLoader = false,
-    Duration duration = const Duration(seconds: 3),
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        duration: duration,
-        backgroundColor:
-            backgroundColor ??
-            (isDark ? const Color(0xFF1E1E2E) : Colors.white),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-        elevation: 4,
-        content: Row(
-          children: [
-            if (showLoader) ...[
-              SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    isDark ? AppColors.primary : AppColors.primary,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-            ] else if (backgroundColor == Colors.green) ...[
-              const Icon(
-                Icons.check_circle_rounded,
-                color: Colors.green,
-                size: 18,
-              ),
-              const SizedBox(width: 12),
-            ] else if (backgroundColor == Colors.red) ...[
-              const Icon(Icons.error_rounded, color: Colors.red, size: 18),
-              const SizedBox(width: 12),
-            ] else ...[
-              Icon(
-                Icons.info_rounded,
-                color: isDark ? AppColors.primary : AppColors.primary,
-                size: 18,
-              ),
-              const SizedBox(width: 12),
-            ],
-            Expanded(
-              child: Text(
-                message,
-                style: GoogleFonts.rajdhani(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? AppColors.darkText : AppColors.lightText,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showLogoutDialog(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        return AlertDialog(
-          backgroundColor: isDark ? AppColors.darkCard : AppColors.lightCard,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Text(
-            'Logout',
-            style: GoogleFonts.orbitron(
-              fontWeight: FontWeight.w700,
-              color: AppColors.error,
-            ),
-          ),
-          content: Text(
-            'Are you sure you want to logout?',
-            style: GoogleFonts.rajdhani(
-              fontSize: 15,
-              color: isDark ? AppColors.darkText : AppColors.lightText,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(
-                'Cancel',
-                style: GoogleFonts.rajdhani(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(ctx);
-
-                final sp = context.read<SettingsProvider>();
-                await sp.logout();
-
-                if (context.mounted) {
-                  Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => LoginScreen()),
-                    (route) => false,
-                  );
-                }
-              },
-              child: Text(
-                'Logout',
-                style: GoogleFonts.rajdhani(
-                  color: AppColors.error,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Consumer<SettingsProvider>(
-      builder: (_, sp, __) {
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(
-              'Settings',
-              style: GoogleFonts.orbitron(
-                fontSize: size.width * 0.05,
-                fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-          ),
-          body: ListView(
-            padding: EdgeInsets.all(size.width * 0.04),
-            children: [
-              SizedBox(height: size.height * 0.025),
-
-              _SettingsTile(
-                icon: Icons.person_outline_rounded,
-                label: sp.userName ?? 'Profile',
-                color: AppColors.primary,
-                isDark: isDark,
-                onTap: () => Navigator.pushNamed(context, AppRoutes.profile),
-              ),
-              Divider(
-                height: 1,
-                indent: 56,
-                color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-              ),
-              _SettingsTile(
-                icon: Icons.lock_outline_rounded,
-                label: 'Change Password',
-                color: AppColors.primary,
-                isDark: isDark,
-                onTap: () {
-                  final isGoogleUser =
-                      FirebaseAuth.instance.currentUser?.providerData.any(
-                        (p) => p.providerId == 'google.com',
-                      ) ??
-                      false;
-
-                  if (isGoogleUser) {
-                    _showSnackBar(
-                      context,
-                      message:
-                          'Google accounts manage passwords through Google.',
-                    );
-                    return;
-                  }
-                  _showChangePasswordBottomSheet(context, sp);
-                },
-              ),
-              SizedBox(height: size.height * 0.025),
-
-              FadeSlideIn(
-                delay: const Duration(milliseconds: 60),
-                child: _SettingsSection(
-                  title: 'Display',
-                  isDark: isDark,
-                  children: [
-                    _ThemeToggle(sp: sp, isDark: isDark),
-                    Divider(
-                      height: 1,
-                      indent: 56,
-                      color: isDark
-                          ? AppColors.darkBorder
-                          : AppColors.lightBorder,
-                    ),
-                    _FontSizeSetting(sp: sp, isDark: isDark),
-                  ],
-                ),
-              ),
-              SizedBox(height: size.height * 0.025),
-
-              FadeSlideIn(
-                delay: const Duration(milliseconds: 90),
-                child: _SettingsSection(
-                  title: 'Notifications',
-                  isDark: isDark,
-                  children: [_NotificationsToggle(sp: sp, isDark: isDark)],
-                ),
-              ),
-              SizedBox(height: size.height * 0.025),
-
-              if (!sp.isPremium) ...[
-                FadeSlideIn(
-                  delay: const Duration(milliseconds: 30),
-                  child: _PremiumBanner(isDark: isDark),
-                ),
-                SizedBox(height: size.height * 0.025),
-              ],
-
-              SizedBox(height: size.height * 0.02),
-
-              FadeSlideIn(
-                delay: const Duration(milliseconds: 120),
-                child: _SettingsSection(
-                  title: 'Support & Legal',
-                  isDark: isDark,
-                  children: [
-                    _SettingsTile(
-                      icon: Icons.people_alt_rounded,
-                      label: 'Contact Developer',
-                      color: const Color(0xFF0077B5),
-                      isDark: isDark,
-                      onTap: () => _launchUrl(
-                        'https://www.linkedin.com/company/your-company',
-                      ),
-                    ),
-                    Divider(
-                      height: 1,
-                      indent: 56,
-                      color: isDark
-                          ? AppColors.darkBorder
-                          : AppColors.lightBorder,
-                    ),
-                    _SettingsTile(
-                      icon: Icons.description_rounded,
-                      label: 'Terms of Service',
-                      color: AppColors.primary,
-                      isDark: isDark,
-                      onTap: () => Navigator.pushNamed(
-                        context,
-                        AppRoutes.termsOfService,
-                      ),
-                    ),
-                    Divider(
-                      height: 1,
-                      indent: 56,
-                      color: isDark
-                          ? AppColors.darkBorder
-                          : AppColors.lightBorder,
-                    ),
-                    _SettingsTile(
-                      icon: Icons.privacy_tip_rounded,
-                      label: 'Privacy Policy',
-                      color: AppColors.primary,
-                      isDark: isDark,
-                      onTap: () =>
-                          Navigator.pushNamed(context, AppRoutes.privacyPolicy),
-                    ),
-                  ],
-                ),
-              ),
-
-              SizedBox(height: size.height * 0.02),
-
-              FadeSlideIn(
-                delay: const Duration(milliseconds: 180),
-                child: _SettingsSection(
-                  title: 'Account',
-                  isDark: isDark,
-                  children: [
-                    _SettingsTile(
-                      icon: Icons.logout_rounded,
-                      label: 'Logout',
-                      color: AppColors.error,
-                      textColor: AppColors.error,
-                      isDark: isDark,
-                      onTap: () => _showLogoutDialog(context),
-                    ),
-                  ],
-                ),
-              ),
-
-              SizedBox(height: size.height * 0.03),
-
-              Center(
-                child: Text(
-                  'EchoSee v1.0.0',
-                  style: GoogleFonts.rajdhani(
-                    fontSize: size.width * 0.032,
-                    color: isDark
-                        ? AppColors.darkTextMuted
-                        : AppColors.lightTextMuted,
-                    letterSpacing: 1,
-                  ),
-                ),
-              ),
-              SizedBox(height: size.height * 0.02),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _SettingsTile extends StatelessWidget {
+class SettingsTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
   final Color? textColor;
   final bool isDark;
   final VoidCallback onTap;
+  final Widget? trailing;
 
-  const _SettingsTile({
+  const SettingsTile({
+    super.key,
     required this.icon,
     required this.label,
     required this.color,
     required this.isDark,
     required this.onTap,
     this.textColor,
+    this.trailing,
   });
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12),
       leading: Container(
         width: 36,
         height: 36,
@@ -386,105 +47,22 @@ class _SettingsTile extends StatelessWidget {
               textColor ?? (isDark ? AppColors.darkText : AppColors.lightText),
         ),
       ),
-      trailing: Icon(
-        Icons.chevron_right_rounded,
-        color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
-        size: 20,
-      ),
+      trailing:
+          trailing ??
+          Icon(
+            Icons.chevron_right_rounded,
+            color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+            size: 20,
+          ),
       onTap: onTap,
     );
   }
 }
 
-class _SettingsSection extends StatelessWidget {
-  final String title;
-  final bool isDark;
-  final List<Widget> children;
-
-  const _SettingsSection({
-    required this.title,
-    required this.isDark,
-    required this.children,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            title.toUpperCase(),
-            style: GoogleFonts.rajdhani(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: AppColors.primary,
-              letterSpacing: 2,
-            ),
-          ),
-        ),
-        Container(
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.darkCard : AppColors.lightCard,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-            ),
-          ),
-          child: Column(children: children),
-        ),
-      ],
-    );
-  }
-}
-
-class _ThemeToggle extends StatelessWidget {
+class NotificationsToggle extends StatelessWidget {
   final SettingsProvider sp;
   final bool isDark;
-  const _ThemeToggle({required this.sp, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: AnimatedSwitcher(
-          duration: AppConstants.animNormal,
-          child: Icon(
-            sp.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-            key: ValueKey(sp.isDarkMode),
-            color: AppColors.primary,
-            size: 20,
-          ),
-        ),
-      ),
-      title: Text(
-        'Dark Mode',
-        style: GoogleFonts.rajdhani(
-          fontWeight: FontWeight.w600,
-          fontSize: 16,
-          color: isDark ? AppColors.darkText : AppColors.lightText,
-        ),
-      ),
-      trailing: Switch(
-        value: sp.isDarkMode,
-        onChanged: (_) => sp.toggleDarkMode(),
-        activeColor: AppColors.primary,
-      ),
-    );
-  }
-}
-
-class _NotificationsToggle extends StatelessWidget {
-  final SettingsProvider sp;
-  final bool isDark;
-  const _NotificationsToggle({required this.sp, required this.isDark});
+  const NotificationsToggle({required this.sp, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -525,125 +103,286 @@ class _NotificationsToggle extends StatelessWidget {
   }
 }
 
-class _FontSizeSetting extends StatelessWidget {
+class FontSizeSetting extends StatefulWidget {
   final SettingsProvider sp;
   final bool isDark;
-  const _FontSizeSetting({required this.sp, required this.isDark});
+  const FontSizeSetting({required this.sp, required this.isDark});
+
+  @override
+  State<FontSizeSetting> createState() => _FontSizeSettingState();
+}
+
+class _FontSizeSettingState extends State<FontSizeSetting> {
+  OverlayEntry? _overlayEntry;
+  bool _isOpen = false;
+
+  final sizes = [
+    {'label': 'Small', 'value': 14.0},
+    {'label': 'Medium', 'value': 18.0},
+    {'label': 'Large', 'value': 22.0},
+    {'label': 'X-Large', 'value': 26.0},
+  ];
+
+  void _closePopup() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+    if (mounted) {
+      setState(() => _isOpen = false);
+    }
+  }
+
+  void _showPopup(BuildContext context) {
+    if (_isOpen) {
+      _closePopup();
+      return;
+    }
+
+    final RenderBox renderBox = context.findRenderObject() as RenderBox;
+    final offset = renderBox.localToGlobal(Offset.zero);
+    final size = renderBox.size;
+
+    _overlayEntry = OverlayEntry(
+      builder: (context) => Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: _closePopup,
+              behavior: HitTestBehavior.translucent,
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+
+          Positioned(
+            top: offset.dy + size.height + 8,
+            right: MediaQuery.of(context).size.width - offset.dx - size.width,
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                width: 200,
+                decoration: BoxDecoration(
+                  color: widget.isDark
+                      ? AppColors.darkSurface
+                      : AppColors.lightSurface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: widget.isDark
+                        ? AppColors.darkBorder
+                        : AppColors.lightBorder,
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'PREVIEW',
+                            style: GoogleFonts.rajdhani(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.2,
+                              color: widget.isDark
+                                  ? AppColors.darkTextMuted
+                                  : AppColors.lightTextMuted,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          StatefulBuilder(
+                            builder: (context, setInnerState) {
+                              return Text(
+                                'Hello, How are you.',
+                                style: TextStyle(
+                                  fontSize: widget.sp.fontSize,
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    Divider(
+                      height: 1,
+                      color: widget.isDark
+                          ? AppColors.darkBorder
+                          : AppColors.lightBorder,
+                    ),
+
+                    ...sizes.map((sizeData) {
+                      final label = sizeData['label'] as String;
+                      final value = sizeData['value'] as double;
+
+                      return StatefulBuilder(
+                        builder: (context, setInnerState) {
+                          final isSelected = widget.sp.fontSize == value;
+                          return InkWell(
+                            onTap: () {
+                              widget.sp.setFontSize(value);
+                              _overlayEntry?.markNeedsBuild();
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    label,
+                                    style: GoogleFonts.rajdhani(
+                                      fontSize: value * 0.75,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                      color: isSelected
+                                          ? AppColors.primary
+                                          : (widget.isDark
+                                                ? AppColors.darkText
+                                                : AppColors.lightText),
+                                    ),
+                                  ),
+                                  if (isSelected)
+                                    Icon(
+                                      Icons.check_rounded,
+                                      color: AppColors.primary,
+                                      size: 18,
+                                    ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    }),
+
+                    Divider(
+                      height: 1,
+                      color: widget.isDark
+                          ? AppColors.darkBorder
+                          : AppColors.lightBorder,
+                    ),
+                    InkWell(
+                      onTap: _closePopup,
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(16),
+                        bottomRight: Radius.circular(16),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Center(
+                          child: Text(
+                            'Close',
+                            style: GoogleFonts.rajdhani(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    Overlay.of(context).insert(_overlayEntry!);
+    setState(() => _isOpen = true);
+  }
+
+  @override
+  void dispose() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final sizes = [
-      {'label': 'Small', 'value': 14.0},
-      {'label': 'Medium', 'value': 18.0},
-      {'label': 'Large', 'value': 22.0},
-      {'label': 'X-Large', 'value': 26.0},
-    ];
-
     final currentSizeLabel =
         sizes.firstWhere(
-              (s) => s['value'] == sp.fontSize,
+              (s) => s['value'] == widget.sp.fontSize,
               orElse: () => sizes[1],
             )['label']
             as String;
 
     return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.text_fields_rounded,
-                  color: AppColors.primary,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Text(
-                'Font Size',
-                style: GoogleFonts.rajdhani(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                  color: isDark ? AppColors.darkText : AppColors.lightText,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                currentSizeLabel,
-                style: GoogleFonts.rajdhani(
-                  color: AppColors.primary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Hello, How are you.',
-            style: TextStyle(
-              fontSize: sp.fontSize,
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.text_fields_rounded,
               color: AppColors.primary,
-              fontWeight: FontWeight.w600,
+              size: 20,
             ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: sizes.map((sizeData) {
-              final label = sizeData['label'] as String;
-              final value = sizeData['value'] as double;
-              final isSelected = sp.fontSize == value;
-
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: ScaleTap(
-                    onTap: () => sp.setFontSize(value),
-                    child: AnimatedContainer(
-                      duration: AppConstants.animNormal,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppColors.primary.withOpacity(0.15)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: isSelected
-                              ? AppColors.primary
-                              : (isDark
-                                    ? AppColors.darkBorder
-                                    : AppColors.lightBorder),
-                        ),
-                      ),
-                      child: Text(
-                        label,
-                        style: GoogleFonts.rajdhani(
-                          color: isSelected
-                              ? AppColors.primary
-                              : (isDark
-                                    ? AppColors.darkTextMuted
-                                    : AppColors.lightTextMuted),
-                          fontSize: 13,
-                          fontWeight: isSelected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                        ),
-                      ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              'Subtitle Font Size',
+              style: GoogleFonts.rajdhani(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+                color: widget.isDark ? AppColors.darkText : AppColors.lightText,
+              ),
+            ),
+          ),
+          Builder(
+            builder: (context) => GestureDetector(
+              onTap: () => _showPopup(context),
+              child: Row(
+                children: [
+                  Text(
+                    currentSizeLabel,
+                    style: GoogleFonts.rajdhani(
+                      color: AppColors.primary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ),
-              );
-            }).toList(),
+                  const SizedBox(width: 4),
+                  AnimatedRotation(
+                    turns: _isOpen ? 0.25 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.chevron_right_rounded,
+                      color: widget.isDark
+                          ? AppColors.darkTextMuted
+                          : AppColors.lightTextMuted,
+                      size: 20,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -1128,9 +867,9 @@ void _showChangePasswordBottomSheet(BuildContext context, SettingsProvider sp) {
   );
 }
 
-class _PremiumBanner extends StatelessWidget {
+class PremiumBanner extends StatelessWidget {
   final bool isDark;
-  const _PremiumBanner({required this.isDark});
+  const PremiumBanner({required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -1184,14 +923,14 @@ class _PremiumBanner extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          const _PremiumFeatureItem(
+          const PremiumFeatureItem(
             text:
                 'Multi-language translation (Arabic,\nFrench, Chinese, Spanish)',
           ),
-          const _PremiumFeatureItem(text: 'Unlimited transcript history'),
-          const _PremiumFeatureItem(text: 'Speaker identification'),
-          const _PremiumFeatureItem(text: 'Export to PDF'),
-          const _PremiumFeatureItem(text: 'Advanced subtitle customization'),
+          const PremiumFeatureItem(text: 'Unlimited transcript history'),
+          const PremiumFeatureItem(text: 'Speaker identification'),
+          const PremiumFeatureItem(text: 'Export to PDF'),
+          const PremiumFeatureItem(text: 'Advanced subtitle customization'),
           const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
@@ -1251,9 +990,9 @@ class _PremiumBanner extends StatelessWidget {
   }
 }
 
-class _PremiumFeatureItem extends StatelessWidget {
+class PremiumFeatureItem extends StatelessWidget {
   final String text;
-  const _PremiumFeatureItem({required this.text});
+  const PremiumFeatureItem({required this.text});
 
   @override
   Widget build(BuildContext context) {
@@ -1284,6 +1023,91 @@ class _PremiumFeatureItem extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class SettingsSection extends StatelessWidget {
+  final String title;
+  final bool isDark;
+  final List<Widget> children;
+
+  const SettingsSection({
+    required this.title,
+    required this.isDark,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 4),
+          child: Text(
+            title.toUpperCase(),
+            style: GoogleFonts.rajdhani(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: isDark ? AppColors.lightBg : AppColors.darkBorder,
+              letterSpacing: 2,
+            ),
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkCard : AppColors.lightCard,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+            ),
+          ),
+          child: Column(children: children),
+        ),
+      ],
+    );
+  }
+}
+
+class ThemeToggle extends StatelessWidget {
+  final SettingsProvider sp;
+  final bool isDark;
+  const ThemeToggle({required this.sp, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: AppColors.primary.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: AnimatedSwitcher(
+          duration: AppConstants.animNormal,
+          child: Icon(
+            sp.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+            key: ValueKey(sp.isDarkMode),
+            color: AppColors.primary,
+            size: 20,
+          ),
+        ),
+      ),
+      title: Text(
+        'Dark Mode',
+        style: GoogleFonts.rajdhani(
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+          color: isDark ? AppColors.darkText : AppColors.lightText,
+        ),
+      ),
+      trailing: Switch(
+        value: sp.isDarkMode,
+        onChanged: (_) => sp.toggleDarkMode(),
+        activeColor: AppColors.primary,
       ),
     );
   }
