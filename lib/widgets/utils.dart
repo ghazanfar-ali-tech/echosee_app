@@ -14,3 +14,25 @@ class Utils {
     );
   }
 }
+
+class AppTranslator {
+  static String _currentLanguage = 'en';
+
+  static final Map<String, Map<String, String>> _translations = {
+    'en': {'hello_how_are_you': 'Hello, how are you?'},
+    'ur': {'hello_how_are_you': 'ہیلو، آپ کیسے ہیں؟'},
+  };
+
+  static String get currentLanguage => _currentLanguage;
+
+  static void setLanguage(String langCode) {
+    _currentLanguage = langCode;
+  }
+
+  static String translate(String key) {
+    return _translations[_currentLanguage]?[key] ?? key;
+  }
+}
+
+// Short alias
+String tr(String key) => AppTranslator.translate(key);

@@ -4,6 +4,7 @@ import 'package:echosee_app/auth_UI/login_screen.dart';
 import 'package:echosee_app/provider/setting_provider.dart';
 import 'package:echosee_app/services/auth_services.dart';
 import 'package:echosee_app/widgets/animated_widget.dart';
+import 'package:echosee_app/widgets/utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -588,12 +589,15 @@ class _FontSizeSetting extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Hello, How are you.',
+            tr('hello_how_are_you'),
             style: TextStyle(
               fontSize: sp.fontSize,
               color: AppColors.primary,
               fontWeight: FontWeight.w600,
             ),
+            textDirection: AppTranslator.currentLanguage == 'ur'
+                ? TextDirection.rtl
+                : TextDirection.ltr,
           ),
           const SizedBox(height: 16),
           Row(

@@ -40,7 +40,7 @@ class AppConstants {
     final primaryColor = isDark
         ? const Color(0xFF00D4FF)
         : const Color(0xFF0096C7);
-        
+
     return AppThemeColors(
       isDark: isDark,
       bgColor: bgColor,
@@ -55,7 +55,7 @@ class AppConstants {
   // App Info
   static const String appName = 'EchoSee';
   static const String appVersion = '1.0.0';
-  static const String appTagline = 'See Every Word';
+  static const String appTagline = 'Break Barriers, Hear The World';
 
   // Database
   static const String dbName = 'echosee.db';

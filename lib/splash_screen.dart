@@ -221,6 +221,8 @@ class _SplashScreenState extends State<SplashScreen>
                               letterSpacing: 4,
                             ),
                           ),
+                          const SizedBox(height: 8),
+                          //     Text("Break Barriers, Hear The World"),
                         ],
                       ),
                     ),

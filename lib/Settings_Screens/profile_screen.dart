@@ -1,15 +1,18 @@
 import 'dart:io';
+import 'package:echosee_app/Settings_Screens/languagePopUp.dart';
+import 'package:echosee_app/Settings_Screens/profile_widget.dart';
 import 'package:echosee_app/Settings_Screens/setting_widgets.dart';
-import 'package:echosee_app/app_constants.dart';
+
 import 'package:echosee_app/app_theme.dart';
 import 'package:echosee_app/provider/setting_provider.dart';
 import 'package:echosee_app/widgets/animated_widget.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:echosee_app/widgets/utils.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -168,6 +171,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       _showSnackBar(context, message: 'Error: $e', backgroundColor: Colors.red);
     }
+  }
+
+  void _showLanguagePopup(BuildContext context, bool isDark) {
+    final sp = context.read<SettingsProvider>();
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: '',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 250),
+      transitionBuilder: (ctx, anim, _, child) {
+        return ScaleTransition(
+          scale: CurvedAnimation(parent: anim, curve: Curves.easeOutBack),
+          child: FadeTransition(opacity: anim, child: child),
+        );
+      },
+      pageBuilder: (ctx, _, __) {
+        return LanguagePopup(
+          isDark: isDark,
+          selectedLanguage: sp.selectedLanguage,
+          onLanguageSelected: (langCode) {
+            AppTranslator.setLanguage(langCode);
+            sp.setLanguage(langCode);
+          },
+        );
+      },
+    );
   }
 
   Future<void> _saveChanges(SettingsProvider sp) async {
@@ -426,7 +456,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               label: 'Default Language',
                               color: AppColors.primary,
                               isDark: isDark,
-                              onTap: () {},
+                              onTap: () => _showLanguagePopup(context, isDark),
                             ),
 
                             Divider(
@@ -572,129 +602,4 @@ class _ProfileScreenState extends State<ProfileScreen> {
       },
     );
   }
-}
-
-Future<void> _launchUrl(String url) async {
-  final uri = Uri.parse(url);
-  if (await canLaunchUrl(uri)) {
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
-}
-
-void _showSnackBar(
-  BuildContext context, {
-  required String message,
-  Color? backgroundColor,
-  bool showLoader = false,
-  Duration duration = const Duration(seconds: 3),
-}) {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      duration: duration,
-      backgroundColor:
-          backgroundColor ?? (isDark ? const Color(0xFF1E1E2E) : Colors.white),
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: const EdgeInsets.all(16),
-      elevation: 4,
-      content: Row(
-        children: [
-          if (showLoader) ...[
-            SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  isDark ? AppColors.primary : AppColors.primary,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-          ] else if (backgroundColor == Colors.green) ...[
-            const Icon(
-              Icons.check_circle_rounded,
-              color: Colors.green,
-              size: 18,
-            ),
-            const SizedBox(width: 12),
-          ] else if (backgroundColor == Colors.red) ...[
-            const Icon(Icons.error_rounded, color: Colors.red, size: 18),
-            const SizedBox(width: 12),
-          ] else ...[
-            Icon(
-              Icons.info_rounded,
-              color: isDark ? AppColors.primary : AppColors.primary,
-              size: 18,
-            ),
-            const SizedBox(width: 12),
-          ],
-          Expanded(
-            child: Text(
-              message,
-              style: GoogleFonts.rajdhani(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: isDark ? AppColors.darkText : AppColors.lightText,
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-SnackBar _buildSnackBar({
-  required bool isDark,
-  required String message,
-  Color? backgroundColor,
-  bool showLoader = false,
-  Duration duration = const Duration(seconds: 3),
-}) {
-  return SnackBar(
-    duration: duration,
-    backgroundColor:
-        backgroundColor ?? (isDark ? const Color(0xFF1E1E2E) : Colors.white),
-    behavior: SnackBarBehavior.floating,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    margin: const EdgeInsets.all(16),
-    elevation: 4,
-    content: Row(
-      children: [
-        if (showLoader) ...[
-          SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-            ),
-          ),
-          const SizedBox(width: 12),
-        ] else if (backgroundColor == Colors.green) ...[
-          const Icon(Icons.check_circle_rounded, color: Colors.green, size: 18),
-          const SizedBox(width: 12),
-        ] else if (backgroundColor == Colors.red) ...[
-          const Icon(Icons.error_rounded, color: Colors.red, size: 18),
-          const SizedBox(width: 12),
-        ] else ...[
-          Icon(Icons.info_rounded, color: AppColors.primary, size: 18),
-          const SizedBox(width: 12),
-        ],
-        Expanded(
-          child: Text(
-            message,
-            style: GoogleFonts.rajdhani(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: isDark ? AppColors.darkText : AppColors.lightText,
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
 }

@@ -1,9 +1,9 @@
 import 'package:echosee_app/app_constants.dart';
 import 'package:echosee_app/app_theme.dart';
 import 'package:echosee_app/provider/setting_provider.dart';
-import 'package:echosee_app/widgets/animated_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 class SettingsTile extends StatelessWidget {
   final IconData icon;
@@ -199,15 +199,20 @@ class _FontSizeSettingState extends State<FontSizeSetting> {
                             ),
                           ),
                           const SizedBox(height: 6),
-                          StatefulBuilder(
-                            builder: (context, setInnerState) {
+                          Consumer<SettingsProvider>(
+                            builder: (context, sp, _) {
                               return Text(
-                                'Hello, How are you.',
+                                sp.selectedLanguage == 'ur'
+                                    ? 'ہیلو، آپ کیسے ہیں؟'
+                                    : 'Hello, how are you?',
                                 style: TextStyle(
-                                  fontSize: widget.sp.fontSize,
+                                  fontSize: sp.fontSize,
                                   color: AppColors.primary,
                                   fontWeight: FontWeight.w600,
                                 ),
+                                textDirection: sp.selectedLanguage == 'ur'
+                                    ? TextDirection.rtl
+                                    : TextDirection.ltr,
                               );
                             },
                           ),

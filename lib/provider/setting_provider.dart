@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:echosee_app/auth_UI/login_screen.dart';
+import 'package:echosee_app/widgets/utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:echosee_app/services/auth_services.dart';
 import 'package:echosee_app/services/cloudinary_service.dart';
@@ -59,6 +60,10 @@ class SettingsProvider extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     _isNotificationsEnabled = prefs.getBool(_notificationsKey) ?? true;
+
+    final savedLanguage = prefs.getString('selected_language') ?? 'en';
+    _settings = _settings.copyWith(selectedLanguage: savedLanguage);
+    AppTranslator.setLanguage(savedLanguage);
     notifyListeners();
   }
 
@@ -129,6 +134,8 @@ class SettingsProvider extends ChangeNotifier {
     _settings = _settings.copyWith(selectedLanguage: language);
     notifyListeners();
     await _repository.updateSetting('selected_language', language);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selected_language', language);
   }
 
   Future<void> fetchUserProfile() async {
@@ -363,9 +370,17 @@ class SettingsProvider extends ChangeNotifier {
       _profileImageUrl = null;
       notifyListeners();
 
-      // 3. Clear SharedPreferences
       final prefs = await SharedPreferences.getInstance();
+      final savedLanguage = prefs.getString('selected_language') ?? 'en';
+
       await prefs.clear();
+
+      //  Restore language AFTER clearing
+      await prefs.setString('selected_language', savedLanguage);
+
+      // 3. Clear SharedPreferences
+      /// final prefs = await SharedPreferences.getInstance();
+      // await prefs.clear();
 
       // 4. Sign out Firebase
       await FirebaseAuth.instance.signOut();

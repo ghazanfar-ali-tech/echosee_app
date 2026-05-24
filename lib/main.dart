@@ -28,7 +28,6 @@ void main() async {
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   await Firebase.initializeApp(
-    // ← Firebase FIRST
     options: FirebaseOptions(
       apiKey: Constants.apiKey,
       appId: Constants.appId,
@@ -37,7 +36,7 @@ void main() async {
     ),
   );
 
-  await NotificationService().init(); // ← Notifications AFTER
+  await NotificationService().init();
 
   final prefs = await SharedPreferences.getInstance();
   final savedDarkMode = prefs.getBool('dark_mode') ?? false;
@@ -65,6 +64,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sp = context.watch<SettingsProvider>();
+
     return MaterialApp(
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
@@ -76,7 +76,6 @@ class MyApp extends StatelessWidget {
         AppRoutes.splash: (context) => const SplashScreen(),
         AppRoutes.bluetooth: (context) => const BluetoothHomePage(),
         AppRoutes.home: (context) => const HomeScreen(),
-        //  AppRoutes.yamnet: (context) => const YamnetScreen(),
         AppRoutes.login: (context) => LoginScreen(),
         AppRoutes.signup: (context) => SignupScreen(),
         AppRoutes.forgotPassword: (context) => const ForgotPasswordScreen(),
